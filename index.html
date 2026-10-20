@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Clan HQ</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{--bg:#0a0a09;--panel:#24241e;--panel2:#1d1d1a;--line:#2e2d27;--sand:#d8bd82;--orange:#ff7a1a;--text:#d9d6cc;--mut:#8a8778;--ok:#4ade80;--warn:#facc15;--bad:#f87171}
+  html,body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:17px}
+  .body{background-image:linear-gradient(rgba(29, 27, 25, 0.035) 1px,transparent 1px),linear-gradient(90deg,rgba(44, 42, 38, 0.035) 1px,transparent 1px);background-size:32px 32px;min-height:100vh}
+  .mono{font-family:'Share Tech Mono',monospace}
+  .hud{background:var(--panel);border:1px solid var(--line);position:relative;clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+  .hud::before{content:"";position:absolute;left:0;top:0;width:34px;height:2px;background:var(--orange)}
+  .hud h2,.hud h3{letter-spacing:.12em;text-transform:uppercase}
+  .btn{font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:.45rem .9rem;border:1px solid var(--sand);color:var(--sand);background:transparent;cursor:pointer;font-size:.85rem;clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);transition:.15s}
+  .btn:hover{background:var(--sand);color:#111}
+  .btn.pri{background:var(--orange);border-color:var(--orange);color:#111}
+  .btn.pri:hover{background:#ff9347}
+  .btn.ok{border-color:var(--ok);color:var(--ok)} .btn.ok:hover{background:var(--ok);color:#111}
+  .btn.bad{border-color:var(--bad);color:var(--bad)} .btn.bad:hover{background:var(--bad);color:#111}
+  .btn.sm{padding:.25rem .6rem;font-size:.75rem}
+  .inp{width:100%;background:#0e0e0c;border:1px solid var(--line);color:var(--text);padding:.5rem .7rem;outline:none;font-family:inherit;font-size:1rem}
+  .inp:focus{border-color:var(--orange)}
+  label.lbl{display:block;font-size:.75rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);margin-bottom:.25rem}
+  .badge{display:inline-block;padding:.1rem .55rem;font-size:.72rem;font-weight:700;letter-spacing:.1em;border:1px solid}
+  .badge.ok{color:var(--ok);border-color:var(--ok);background:rgba(74,222,128,.08)}
+  .badge.warn{color:var(--warn);border-color:var(--warn);background:rgba(250,204,21,.08)}
+  .badge.bad{color:var(--bad);border-color:var(--bad);background:rgba(248,113,113,.08)}
+  .tab{padding:.6rem 1rem;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--mut);border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}
+  .tab.on{color:var(--orange);border-color:var(--orange)}
+  table{width:100%;border-collapse:collapse}
+  th{text-align:left;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);padding:.6rem .7rem;border-bottom:1px solid var(--line)}
+  td{padding:.6rem .7rem;border-bottom:1px solid rgba(46,45,39,.6);vertical-align:middle}
+  tr:hover td{background:rgba(216,189,130,.03)}
+  .scroll-x{overflow-x:auto}
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:1rem;z-index:50}
+  #toast{position:fixed;bottom:1rem;right:1rem;z-index:60;display:flex;flex-direction:column;gap:.5rem}
+  .toast{background:var(--panel2);border-left:3px solid var(--orange);padding:.6rem 1rem;max-width:320px}
+  .toast.err{border-color:var(--bad)}
+  .stat{font-size:2.2rem;font-weight:700;color:var(--sand);line-height:1}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="modal"></div>
+<div id="toast"></div>
+
+<script>
+/* ============================================================
+   CẤU HÌNH — điền 2 giá trị lấy từ Supabase > Project Settings > API
+   Để trống = chạy CHẾ ĐỘ DEMO (dữ liệu lưu trong trình duyệt)
+   ============================================================ */
+const CONFIG = {
+  SUPABASE_URL: 'https://ptzlvtfuhxxafjaehlwt.supabase.co',
+  SUPABASE_ANON_KEY: 'sb_publishable_u2K8IAzwJ2keXmuYQ3TB_A_8prNMApp'
+};
+
+const DEMO = !CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_ANON_KEY;
+const sb = DEMO ? null : supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+
+/* ---------- Tiện ích ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = n => Number(n || 0).toLocaleString('vi-VN') + 'đ';
+const ST = { paid:['ĐÃ ĐÓNG','ok'], pending:['CHỜ DUYỆT','warn'], unpaid:['CHƯA ĐÓNG','bad'] };
+const ROLE = { leader:'Leader', captain:'Captain', member:'Member' };
+const badge = s => `<span class="badge ${ST[s][1]}">${ST[s][0]}</span>`;
+function toast(msg, err){
+  const el = document.createElement('div');
+  el.className = 'toast' + (err ? ' err' : '');
+  el.textContent = msg;
+  $('#toast').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+const must = r => { if (r.error) throw r.error; return r.data; };
+const fileToDataURL = f => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(f); });
+const isAdmin = () => S.me && ['leader','captain'].includes(S.me.role);
+
+/* ---------- Trạng thái ---------- */
+const S = { user:null, me:null, view:'dash', members:[], periods:[], periodId:null, payments:[], settings:{}, demoRole:'admin' };
+
+/* ============================================================
+   LỚP DỮ LIỆU — DEMO (localStorage)
+   ============================================================ */
+const DKEY = 'clan_hq_demo_v1';
+function demoLoad(){
+  let d = null;
+  try { d = JSON.parse(localStorage.getItem(DKEY)); } catch(e){}
+  if (!d){
+    const names = [['Viper','leader','Diamond','Rusher'],['Ghost','captain','Platinum','Sniper'],['Raven','member','Platinum','Support'],['Mamba','member','Gold','Looter'],['Falcon','member','Gold','Rusher'],['Echo','member','Silver','Support']];
+    const members = names.map((n,i)=>({id:'m'+(i+1),ingame_name:n[0],discord_id:n[0].toLowerCase()+'#'+(1000+i*7),role:n[1],rank:n[2],playstyle:n[3],is_active:true,joined_at:new Date().toISOString()}));
+    const periods = [{id:'p1',label:'Tháng 10/2026',amount:50000,due_date:'2026-10-31'}];
+    const sts = ['paid','paid','pending','unpaid','paid','unpaid'];
+    const payments = members.map((m,i)=>({id:'pay'+(i+1),member_id:m.id,period_id:'p1',status:sts[i],bill_image_url:null,submitted_at:null}));
+    d = { members, periods, payments, settings:{clan_name:'ARENA CLAN',bank_name:'Vietcombank',bank_account:'0123456789',account_holder:'NGUYEN VAN A',momo_phone:'0900000000',qr_image_url:null} };
+    demoSave(d);
+  }
+  return d;
+}
+const demoSave = d => localStorage.setItem(DKEY, JSON.stringify(d));
+const uid = () => 'id' + Math.random().toString(36).slice(2, 10);
+
+const api = DEMO ? {
+  async me(){ const d = demoLoad(); return S.demoRole === 'admin' ? d.members[0] : d.members[3]; },
+  async members(){ return demoLoad().members; },
+  async saveMember(m){ const d = demoLoad(); if (m.id){ d.members = d.members.map(x => x.id === m.id ? {...x, ...m} : x); } else { m.id = uid(); m.joined_at = new Date().toISOString(); d.members.push(m); d.payments.push(...d.periods.map(p => ({id:uid(),member_id:m.id,period_id:p.id,status:'unpaid'}))); } demoSave(d); },
+  async removeMember(id){ const d = demoLoad(); d.members = d.members.filter(x => x.id !== id); d.payments = d.payments.filter(p => p.member_id !== id); demoSave(d); },
+  async periods(){ return demoLoad().periods.slice().reverse(); },
+  async createPeriod(p){ const d = demoLoad(); p.id = uid(); d.periods.push(p); d.members.filter(m => m.is_active).forEach(m => d.payments.push({id:uid(),member_id:m.id,period_id:p.id,status:'unpaid'})); demoSave(d); return p.id; },
+  async payments(pid){ const d = demoLoad(); return d.payments.filter(p => p.period_id === pid).map(p => ({...p, member: d.members.find(m => m.id === p.member_id) || {}})); },
+  async setStatus(id, status){ const d = demoLoad(); d.payments = d.payments.map(p => p.id === id ? {...p, status} : p); demoSave(d); },
+  async submitBill(pay, file){ const d = demoLoad(); const url = await fileToDataURL(file); d.payments = d.payments.map(p => p.id === pay.id ? {...p, status:'pending', bill_image_url:url, submitted_at:new Date().toISOString()} : p); demoSave(d); },
+  async billUrl(path){ return path; },
+  async settings(){ return demoLoad().settings; },
+  async saveSettings(s, qrFile){ const d = demoLoad(); if (qrFile) s.qr_image_url = await fileToDataURL(qrFile); d.settings = {...d.settings, ...s}; demoSave(d); },
+  resetDemo(){ localStorage.removeItem(DKEY); }
+} : {
+  async me(){ return must(await sb.from('members').select('*').eq('auth_user_id', S.user.id).maybeSingle()); },
+  async members(){ return must(await sb.from('members').select('*').order('joined_at')); },
+  async saveMember(m){ if (m.id){ const id = m.id; delete m.id; must(await sb.from('members').update(m).eq('id', id)); } else { delete m.id; const row = must(await sb.from('members').insert(m).select().single());
+      // tạo dòng "chưa đóng" cho các kỳ đã có
+      const per = must(await sb.from('fund_periods').select('id'));
+      if (per.length) must(await sb.from('payments').insert(per.map(p => ({member_id:row.id, period_id:p.id}))));
+  } },
+  async removeMember(id){ must(await sb.from('members').delete().eq('id', id)); },
+  async periods(){ return must(await sb.from('fund_periods').select('*').order('created_at', {ascending:false})); },
+  async createPeriod(p){ delete p.id; const row = must(await sb.from('fund_periods').insert(p).select().single()); return row.id; },
+  async payments(pid){ const rows = must(await sb.from('payments').select('*, members!payments_member_id_fkey(ingame_name,discord_id,role)').eq('period_id', pid)); return rows.map(r => ({...r, member:r.members || {}})).sort((a,b) => (a.member.ingame_name||'').localeCompare(b.member.ingame_name||'')); },
+  async setStatus(id, status){ must(await sb.from('payments').update({status, reviewed_by:S.me.id, reviewed_at:new Date().toISOString()}).eq('id', id)); },
+  async submitBill(pay, file){ const ext = (file.name.split('.').pop() || 'jpg').toLowerCase(); const path = `${S.me.id}/${pay.id}-${Date.now()}.${ext}`;
+    const up = await sb.storage.from('bills').upload(path, file, {upsert:false}); if (up.error) throw up.error;
+    must(await sb.from('payments').update({status:'pending', bill_image_url:path, submitted_at:new Date().toISOString()}).eq('id', pay.id)); },
+  async billUrl(path){ const r = await sb.storage.from('bills').createSignedUrl(path, 600); if (r.error) throw r.error; return r.data.signedUrl; },
+  async settings(){ return must(await sb.from('clan_settings').select('*').eq('id', 1).single()); },
+  async saveSettings(s, qrFile){ if (qrFile){ const path = `qr-${Date.now()}.${(qrFile.name.split('.').pop()||'png').toLowerCase()}`; const up = await sb.storage.from('clan-assets').upload(path, qrFile); if (up.error) throw up.error; s.qr_image_url = sb.storage.from('clan-assets').getPublicUrl(path).data.publicUrl; }
+    must(await sb.from('clan_settings').update(s).eq('id', 1)); }
+};
+
+/* ============================================================
+   KHỞI ĐỘNG & ĐĂNG NHẬP
+   ============================================================ */
+async function boot(){
+  if (DEMO){ await loadAll(); return render(); }
+  const { data } = await sb.auth.getSession();
+  S.user = data.session ? data.session.user : null;
+  if (!S.user) return renderLogin();
+  S.me = await api.me();
+  if (!S.me) return renderClaim();
+  await loadAll(); render();
+}
+if (!DEMO) sb.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_IN' || ev === 'SIGNED_OUT') boot(); });
+
+async function loadAll(){
+  S.me = await api.me();
+  [S.members, S.periods, S.settings] = await Promise.all([api.members(), api.periods(), api.settings()]);
+  if (!S.periods.find(p => p.id === S.periodId)) S.periodId = S.periods[0] ? S.periods[0].id : null;
+  S.payments = S.periodId ? await api.payments(S.periodId) : [];
+}
+async function refresh(){ try { await loadAll(); render(); } catch(e){ toast(e.message, true); } }
+
+function renderLogin(){
+  $('#app').innerHTML = `
+  <div class="min-h-screen flex items-center justify-center p-4">
+    <div class="hud p-8 w-full max-w-md">
+      <div class="mono text-xs" style="color:var(--orange)">// SECURE ACCESS</div>
+      <h1 class="text-3xl font-bold tracking-widest mb-1" style="color:var(--sand)">CLAN HQ</h1>
+      <p class="mb-6" style="color:var(--mut)">Đăng nhập để vào trung tâm chỉ huy clan.</p>
+      <button class="btn pri w-full mb-4" onclick="loginDiscord()">Đăng nhập bằng Discord</button>
+      <div class="mono text-xs text-center mb-4" style="color:var(--mut)">— HOẶC EMAIL —</div>
+      <label class="lbl">Email</label><input id="lg-email" class="inp mb-3" type="email">
+      <label class="lbl">Mật khẩu</label><input id="lg-pass" class="inp mb-4" type="password">
+      <div class="flex gap-2"><button class="btn flex-1" onclick="loginEmail()">Đăng nhập</button><button class="btn flex-1" onclick="signupEmail()">Đăng ký</button></div>
+    </div>
+  </div>`;
+}
+async function loginDiscord(){ const r = await sb.auth.signInWithOAuth({provider:'discord', options:{redirectTo:location.origin + location.pathname}}); if (r.error) toast(r.error.message, true); }
+async function loginEmail(){ const r = await sb.auth.signInWithPassword({email:$('#lg-email').value, password:$('#lg-pass').value}); if (r.error) toast(r.error.message, true); }
+async function signupEmail(){ const r = await sb.auth.signUp({email:$('#lg-email').value, password:$('#lg-pass').value}); if (r.error) toast(r.error.message, true); else toast('Đã đăng ký. Kiểm tra email xác nhận (nếu có bật) rồi đăng nhập.'); }
+async function logout(){ await sb.auth.signOut(); }
+
+function renderClaim(){
+  $('#app').innerHTML = `
+  <div class="min-h-screen flex items-center justify-center p-4">
+    <div class="hud p-8 w-full max-w-md">
+      <div class="mono text-xs" style="color:var(--orange)">// CHƯA LIÊN KẾT HỒ SƠ</div>
+      <h2 class="text-2xl font-bold mb-2" style="color:var(--sand)">Liên kết tài khoản</h2>
+      <p class="mb-4" style="color:var(--mut)">Nhập đúng <b>tên in-game</b> mà Leader/Captain đã thêm cho bạn trong danh sách clan.</p>
+      <input id="claim-name" class="inp mb-4" placeholder="Tên in-game">
+      <div class="flex gap-2"><button class="btn pri flex-1" onclick="claim()">Liên kết</button><button class="btn flex-1" onclick="logout()">Thoát</button></div>
+    </div>
+  </div>`;
+}
+async function claim(){
+  const r = await sb.rpc('claim_member', {p_name:$('#claim-name').value.trim()});
+  if (r.error) return toast(r.error.message, true);
+  boot();
+}
+
+/* ============================================================
+   GIAO DIỆN CHÍNH
+   ============================================================ */
+function render(){
+  const clan = esc(S.settings.clan_name || 'CLAN HQ');
+  const tabs = [['dash','Tổng quan'],['members','Thành viên'],['fund','Quỹ clan']];
+  if (isAdmin()) tabs.push(['settings','Cài đặt']);
+  $('#app').innerHTML = `
+  <header class="border-b" style="border-color:var(--line);background:rgba(10,10,9,.85)">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center gap-3 justify-between">
+      <div>
+        <div class="mono text-xs" style="color:var(--orange)">// TACTICAL COMMAND</div>
+        <div class="text-2xl font-bold tracking-widest" style="color:var(--sand)">${clan}</div>
+      </div>
+      <div class="flex items-center gap-3 flex-wrap">
+        <div class="text-right">
+          <div class="font-bold">${esc(S.me.ingame_name)}</div>
+          <div class="mono text-xs" style="color:var(--mut)">${ROLE[S.me.role]}${isAdmin() ? ' · ADMIN' : ''}</div>
+        </div>
+        ${DEMO ? `<button class="btn sm" onclick="toggleDemoRole()">Demo: xem như ${S.demoRole === 'admin' ? 'Thành viên' : 'Admin'}</button><button class="btn sm bad" onclick="resetDemo()">Reset demo</button>` : `<button class="btn sm" onclick="logout()">Đăng xuất</button>`}
+      </div>
+    </div>
+    <nav class="max-w-6xl mx-auto px-4 flex gap-1 overflow-x-auto">
+      ${tabs.map(t => `<div class="tab ${S.view === t[0] ? 'on' : ''}" onclick="setView('${t[0]}')">${t[1]}</div>`).join('')}
+    </nav>
+  </header>
+  ${DEMO ? `<div class="mono text-xs text-center py-1" style="background:rgba(255,122,26,.12);color:var(--orange)">CHẾ ĐỘ DEMO — dữ liệu chỉ lưu trong trình duyệt này. Điền khóa Supabase vào CONFIG để dùng dữ liệu thật.</div>` : ''}
+  <main class="max-w-6xl mx-auto px-4 py-6" id="view"></main>`;
+  ({dash:viewDash, members:viewMembers, fund:viewFund, settings:viewSettings})[S.view]();
+}
+function setView(v){ S.view = v; render(); }
+async function toggleDemoRole(){ S.demoRole = S.demoRole === 'admin' ? 'member' : 'admin'; if (S.view === 'settings') S.view = 'dash'; await refresh(); }
+function resetDemo(){ if (confirm('Xóa toàn bộ dữ liệu demo?')){ api.resetDemo(); S.periodId = null; refresh(); } }
+
+/* ---------- Tổng quan ---------- */
+function viewDash(){
+  const per = S.periods.find(p => p.id === S.periodId);
+  const cnt = s => S.payments.filter(p => p.status === s).length;
+  const total = S.payments.length;
+  const collected = cnt('paid') * (per ? per.amount : 0);
+  const mine = S.payments.find(p => p.member_id === S.me.id);
+  const pendings = S.payments.filter(p => p.status === 'pending');
+  $('#view').innerHTML = `
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="hud p-4"><div class="lbl">Quân số</div><div class="stat">${S.members.filter(m => m.is_active).length}</div></div>
+    <div class="hud p-4"><div class="lbl">Đã đóng</div><div class="stat" style="color:var(--ok)">${cnt('paid')}<span class="text-lg" style="color:var(--mut)">/${total}</span></div></div>
+    <div class="hud p-4"><div class="lbl">Chờ duyệt</div><div class="stat" style="color:var(--warn)">${cnt('pending')}</div></div>
+    <div class="hud p-4"><div class="lbl">Đã thu kỳ này</div><div class="stat" style="font-size:1.6rem">${money(collected)}</div></div>
+  </div>
+  <div class="grid md:grid-cols-2 gap-4">
+    <div class="hud p-5">
+      <h3 class="font-bold mb-3" style="color:var(--sand)">Kỳ hiện tại</h3>
+      ${per ? `<div class="text-xl font-bold">${esc(per.label)}</div><div style="color:var(--mut)">Mức đóng: ${money(per.amount)}${per.due_date ? ' · Hạn: ' + esc(per.due_date) : ''}</div>
+        ${mine ? `<div class="mt-4">Trạng thái của bạn: ${badge(mine.status)}</div>${mine.status === 'unpaid' ? `<button class="btn pri mt-3" onclick="setView('fund')">Đóng quỹ ngay</button>` : ''}` : ''}`
+      : `<div style="color:var(--mut)">Chưa có kỳ đóng quỹ nào.${isAdmin() ? ' Vào tab Quỹ clan để tạo kỳ mới.' : ''}</div>`}
+    </div>
+    <div class="hud p-5">
+      <h3 class="font-bold mb-3" style="color:var(--sand)">${isAdmin() ? 'Bill đang chờ duyệt' : 'Đồng đội chưa đóng'}</h3>
+      ${isAdmin()
+        ? (pendings.length ? pendings.map(p => `<div class="flex items-center justify-between py-2 border-b" style="border-color:var(--line)"><span>${esc(p.member.ingame_name)}</span><button class="btn sm" onclick="setView('fund')">Xem</button></div>`).join('') : `<div style="color:var(--mut)">Không có bill nào chờ.</div>`)
+        : (S.payments.filter(p => p.status === 'unpaid').map(p => `<span class="badge bad mr-1 mb-1">${esc(p.member.ingame_name)}</span>`).join('') || `<div style="color:var(--ok)">Cả đội đã đóng đủ.</div>`)}
+    </div>
+  </div>`;
+}
+
+/* ---------- Thành viên ---------- */
+function viewMembers(){
+  const rows = S.members.map(m => `<tr>
+    <td><b>${esc(m.ingame_name)}</b>${m.is_active ? '' : ' <span class="badge bad">NGHỈ</span>'}</td>
+    <td class="mono">${esc(m.discord_id || '—')}</td>
+    <td><span class="badge ${m.role === 'leader' ? 'warn' : m.role === 'captain' ? 'ok' : ''}" style="${m.role === 'member' ? 'color:var(--mut);border-color:var(--line)' : ''}">${ROLE[m.role].toUpperCase()}</span></td>
+    <td>${esc(m.rank || '—')}</td><td>${esc(m.playstyle || '—')}</td>
+    ${isAdmin() ? `<td class="whitespace-nowrap"><button class="btn sm" onclick="memberForm('${m.id}')">Sửa</button> <button class="btn sm bad" onclick="delMember('${m.id}')">Xóa</button></td>` : ''}
+  </tr>`).join('');
+  $('#view').innerHTML = `
+  <div class="hud p-5">
+    <div class="flex justify-between items-center mb-4"><h2 class="text-xl font-bold" style="color:var(--sand)">Danh sách thành viên</h2>
+      ${isAdmin() ? `<button class="btn pri" onclick="memberForm()">+ Thêm thành viên</button>` : ''}</div>
+    <div class="scroll-x"><table><thead><tr><th>In-game</th><th>Discord</th><th>Chức vụ</th><th>Rank</th><th>Lối chơi</th>${isAdmin() ? '<th></th>' : ''}</tr></thead><tbody>${rows}</tbody></table></div>
+  </div>`;
+}
+function openModal(html){ $('#modal').innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="hud p-6 w-full max-w-md max-h-full overflow-auto">${html}</div></div>`; }
+function closeModal(){ $('#modal').innerHTML = ''; }
+function memberForm(id){
+  const m = S.members.find(x => x.id === id) || {role:'member', is_active:true};
+  openModal(`
+    <h3 class="text-lg font-bold mb-4" style="color:var(--sand)">${id ? 'Sửa' : 'Thêm'} thành viên</h3>
+    <label class="lbl">Tên in-game</label><input id="f-name" class="inp mb-3" value="${esc(m.ingame_name || '')}">
+    <label class="lbl">Discord ID</label><input id="f-dc" class="inp mb-3" value="${esc(m.discord_id || '')}">
+    <label class="lbl">Chức vụ</label>
+    <select id="f-role" class="inp mb-3">${Object.keys(ROLE).map(r => `<option value="${r}" ${m.role === r ? 'selected' : ''}>${ROLE[r]}</option>`).join('')}</select>
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <div><label class="lbl">Rank</label><input id="f-rank" class="inp" value="${esc(m.rank || '')}"></div>
+      <div><label class="lbl">Lối chơi</label><input id="f-play" class="inp" value="${esc(m.playstyle || '')}"></div>
+    </div>
+    <label class="flex items-center gap-2 mb-5"><input type="checkbox" id="f-act" ${m.is_active ? 'checked' : ''}> Đang hoạt động (tính vào quỹ)</label>
+    <div class="flex gap-2"><button class="btn pri flex-1" onclick="saveMember('${id || ''}')">Lưu</button><button class="btn flex-1" onclick="closeModal()">Hủy</button></div>`);
+}
+async function saveMember(id){
+  const m = { ingame_name:$('#f-name').value.trim(), discord_id:$('#f-dc').value.trim() || null, role:$('#f-role').value, rank:$('#f-rank').value.trim() || null, playstyle:$('#f-play').value.trim() || null, is_active:$('#f-act').checked };
+  if (!m.ingame_name) return toast('Cần nhập tên in-game', true);
+  if (id) m.id = id;
+  try { await api.saveMember(m); closeModal(); toast('Đã lưu'); refresh(); } catch(e){ toast(e.message, true); }
+}
+async function delMember(id){
+  const m = S.members.find(x => x.id === id);
+  if (!confirm('Xóa ' + m.ingame_name + '? Lịch sử đóng quỹ của người này cũng bị xóa.')) return;
+  try { await api.removeMember(id); toast('Đã xóa'); refresh(); } catch(e){ toast(e.message, true); }
+}
+
+/* ---------- Quỹ clan ---------- */
+function viewFund(){
+  const per = S.periods.find(p => p.id === S.periodId);
+  const mine = S.payments.find(p => p.member_id === S.me.id);
+  const st = S.settings || {};
+  const rows = S.payments.map(p => `<tr>
+    <td><b>${esc(p.member.ingame_name)}</b></td>
+    <td>${badge(p.status)}</td>
+    <td class="mono text-sm" style="color:var(--mut)">${p.submitted_at ? new Date(p.submitted_at).toLocaleString('vi-VN') : '—'}</td>
+    ${isAdmin() ? `<td class="whitespace-nowrap">
+      ${p.bill_image_url ? `<button class="btn sm" onclick="viewBill('${p.id}')">Xem bill</button> ` : ''}
+      ${p.status === 'paid' ? `<button class="btn sm bad" onclick="setStatus('${p.id}','unpaid')">Hủy</button>` : `<button class="btn sm ok" onclick="setStatus('${p.id}','paid')">✓ Đã đóng</button>`}
+      ${p.status === 'pending' ? `<button class="btn sm bad" onclick="setStatus('${p.id}','unpaid')">Từ chối</button>` : ''}
+    </td>` : ''}
+  </tr>`).join('');
+  $('#view').innerHTML = `
+  <div class="flex flex-wrap gap-3 items-center mb-4">
+    <select class="inp" style="max-width:260px" onchange="pickPeriod(this.value)">${S.periods.map(p => `<option value="${p.id}" ${p.id === S.periodId ? 'selected' : ''}>${esc(p.label)}</option>`).join('') || '<option>— chưa có kỳ —</option>'}</select>
+    ${per ? `<span class="mono" style="color:var(--mut)">Mức đóng: ${money(per.amount)}${per.due_date ? ' · Hạn ' + esc(per.due_date) : ''}</span>` : ''}
+    ${isAdmin() ? `<button class="btn pri ml-auto" onclick="periodForm()">+ Tạo kỳ mới</button>` : ''}
+  </div>
+  <div class="grid lg:grid-cols-3 gap-4">
+    <div class="hud p-5 lg:col-span-2">
+      <h2 class="text-xl font-bold mb-3" style="color:var(--sand)">Bảng điểm danh đóng quỹ</h2>
+      <div class="scroll-x"><table><thead><tr><th>Thành viên</th><th>Trạng thái</th><th>Gửi bill lúc</th>${isAdmin() ? '<th>Thao tác</th>' : ''}</tr></thead><tbody>${rows || `<tr><td colspan="4" style="color:var(--mut)">Chưa có dữ liệu.</td></tr>`}</tbody></table></div>
+    </div>
+    <div class="hud p-5">
+      <h2 class="text-xl font-bold mb-3" style="color:var(--sand)">Chuyển khoản</h2>
+      ${st.qr_image_url ? `<img src="${esc(st.qr_image_url)}" class="w-full max-w-[220px] mx-auto mb-3 bg-white p-2" alt="QR">` : `<div class="mono text-sm mb-3" style="color:var(--mut)">Admin chưa tải ảnh QR.</div>`}
+      <div class="mono text-sm leading-7">
+        ${st.bank_name ? `<div>NGÂN HÀNG: <b>${esc(st.bank_name)}</b></div>` : ''}
+        ${st.bank_account ? `<div>STK: <b>${esc(st.bank_account)}</b></div>` : ''}
+        ${st.account_holder ? `<div>CHỦ TK: <b>${esc(st.account_holder)}</b></div>` : ''}
+        ${st.momo_phone ? `<div>MOMO: <b>${esc(st.momo_phone)}</b></div>` : ''}
+        ${per ? `<div>SỐ TIỀN: <b style="color:var(--orange)">${money(per.amount)}</b></div><div>NỘI DUNG: <b>${esc(S.me.ingame_name)} ${esc(per.label)}</b></div>` : ''}
+      </div>
+      ${mine && per ? `<hr class="my-4" style="border-color:var(--line)">
+        <div class="mb-2">Trạng thái của bạn: ${badge(mine.status)}</div>
+        ${mine.status === 'unpaid' ? `<label class="lbl">Ảnh bill chuyển khoản</label><input type="file" id="bill-file" accept="image/*" class="inp mb-3"><button class="btn pri w-full" onclick="uploadBill()">Gửi bill</button>`
+          : mine.status === 'pending' ? `<div style="color:var(--warn)">Bill đã gửi, đang chờ Admin duyệt.</div>` : `<div style="color:var(--ok)">Bạn đã hoàn thành đóng quỹ kỳ này.</div>`}` : ''}
+    </div>
+  </div>`;
+}
+async function pickPeriod(id){ S.periodId = id; S.payments = await api.payments(id); render(); }
+function periodForm(){
+  const d = new Date();
+  openModal(`
+    <h3 class="text-lg font-bold mb-4" style="color:var(--sand)">Tạo kỳ đóng quỹ</h3>
+    <label class="lbl">Tên kỳ</label><input id="p-label" class="inp mb-3" value="Tháng ${d.getMonth() + 1}/${d.getFullYear()}">
+    <label class="lbl">Số tiền (VNĐ)</label><input id="p-amount" type="number" class="inp mb-3" value="50000">
+    <label class="lbl">Hạn đóng</label><input id="p-due" type="date" class="inp mb-5">
+    <div class="flex gap-2"><button class="btn pri flex-1" onclick="savePeriod()">Tạo</button><button class="btn flex-1" onclick="closeModal()">Hủy</button></div>`);
+}
+async function savePeriod(){
+  const p = { label:$('#p-label').value.trim(), amount:parseInt($('#p-amount').value, 10), due_date:$('#p-due').value || null };
+  if (!p.label || !p.amount) return toast('Nhập đủ tên kỳ và số tiền', true);
+  try { S.periodId = await api.createPeriod(p); closeModal(); toast('Đã tạo kỳ mới, mọi thành viên ở trạng thái Chưa đóng'); refresh(); } catch(e){ toast(e.message, true); }
+}
+async function setStatus(id, status){ try { await api.setStatus(id, status); refresh(); } catch(e){ toast(e.message, true); } }
+async function uploadBill(){
+  const f = $('#bill-file').files[0];
+  if (!f) return toast('Chọn ảnh bill trước', true);
+  if (f.size > 5 * 1024 * 1024) return toast('Ảnh tối đa 5MB', true);
+  const pay = S.payments.find(p => p.member_id === S.me.id);
+  try { await api.submitBill(pay, f); toast('Đã gửi bill, chờ duyệt'); refresh(); } catch(e){ toast(e.message, true); }
+}
+async function viewBill(id){
+  const p = S.payments.find(x => x.id === id);
+  try { const url = await api.billUrl(p.bill_image_url);
+    openModal(`<h3 class="text-lg font-bold mb-3" style="color:var(--sand)">Bill của ${esc(p.member.ingame_name)}</h3>
+      <img src="${esc(url)}" class="w-full mb-4" alt="bill">
+      <div class="flex gap-2"><button class="btn ok flex-1" onclick="setStatus('${p.id}','paid');closeModal()">✓ Duyệt</button><button class="btn bad flex-1" onclick="setStatus('${p.id}','unpaid');closeModal()">Từ chối</button><button class="btn flex-1" onclick="closeModal()">Đóng</button></div>`);
+  } catch(e){ toast(e.message, true); }
+}
+
+/* ---------- Cài đặt ---------- */
+function viewSettings(){
+  const s = S.settings;
+  $('#view').innerHTML = `
+  <div class="hud p-5 max-w-xl">
+    <h2 class="text-xl font-bold mb-4" style="color:var(--sand)">Cài đặt clan</h2>
+    <label class="lbl">Tên clan</label><input id="s-clan" class="inp mb-3" value="${esc(s.clan_name || '')}">
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <div><label class="lbl">Ngân hàng</label><input id="s-bank" class="inp" value="${esc(s.bank_name || '')}"></div>
+      <div><label class="lbl">Số tài khoản</label><input id="s-acc" class="inp" value="${esc(s.bank_account || '')}"></div>
+    </div>
+    <label class="lbl">Chủ tài khoản</label><input id="s-holder" class="inp mb-3" value="${esc(s.account_holder || '')}">
+    <label class="lbl">SĐT Momo</label><input id="s-momo" class="inp mb-3" value="${esc(s.momo_phone || '')}">
+    <label class="lbl">Ảnh QR nhận tiền</label>
+    ${s.qr_image_url ? `<img src="${esc(s.qr_image_url)}" class="w-32 bg-white p-1 mb-2" alt="QR">` : ''}
+    <input type="file" id="s-qr" accept="image/*" class="inp mb-5">
+    <button class="btn pri" onclick="saveSettings()">Lưu cài đặt</button>
+  </div>`;
+}
+async function saveSettings(){
+  const s = { clan_name:$('#s-clan').value.trim() || 'Tên Clan', bank_name:$('#s-bank').value.trim() || null, bank_account:$('#s-acc').value.trim() || null, account_holder:$('#s-holder').value.trim() || null, momo_phone:$('#s-momo').value.trim() || null };
+  try { await api.saveSettings(s, $('#s-qr').files[0]); toast('Đã lưu cài đặt'); refresh(); } catch(e){ toast(e.message, true); }
+}
+
+boot().catch(e => { console.error(e); $('#app').innerHTML = `<div class="p-8" style="color:var(--bad)">Lỗi khởi động: ${esc(e.message)}</div>`; });
+</script>
