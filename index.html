@@ -3,16 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Clan HQ</title>
+<title>CLAN LAG</title>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  :root{--bg:#0a0a09;--panel:#24241e;--panel2:#1d1d1a;--line:#2e2d27;--sand:#d8bd82;--orange:#ff7a1a;--text:#d9d6cc;--mut:#8a8778;--ok:#4ade80;--warn:#facc15;--bad:#f87171}
-  html,body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:17px}
-  .body{background-image:linear-gradient(rgba(29, 27, 25, 0.035) 1px,transparent 1px),linear-gradient(90deg,rgba(44, 42, 38, 0.035) 1px,transparent 1px);background-size:32px 32px;min-height:100vh}
+  :root{--bg:#0a0a09;--panel:#151513;--panel2:#1d1d1a;--line:#2e2d27;--sand:#d8bd82;--orange:#ff7a1a;--text:#d9d6cc;--mut:#8a8778;--ok:#4ade80;--warn:#facc15;--bad:#f87171}
+  html{background:var(--bg)}
+  body{background:transparent;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:17px;min-height:100vh}
+  /* NỀN ẢNH: 3 ảnh bg1.jpg, bg2.jpg, bg3.jpg chuyển mờ liên tục (mỗi ảnh 8 giây) */
+  #bg{position:fixed;inset:0;z-index:-1;background:#0a0a09}
+  #bg i{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;animation:bgfade 24s infinite}
+  #bg i:nth-child(1){background-image:url('bg1.jpg')}
+  #bg i:nth-child(2){background-image:url('bg2.jpg');animation-delay:8s}
+  #bg i:nth-child(3){background-image:url('bg3.jpg');animation-delay:16s}
+  #bg::after{content:"";position:absolute;inset:0;background:linear-gradient(rgba(10,10,9,.72),rgba(10,10,9,.86))} /* độ phủ tối: tăng số để ảnh mờ hơn */
+  @keyframes bgfade{0%{opacity:0}6%{opacity:1}33%{opacity:1}39%{opacity:0}100%{opacity:0}}
   .mono{font-family:'Share Tech Mono',monospace}
-  .hud{background:var(--panel);border:1px solid var(--line);position:relative;clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+  .hud{background:rgba(36,36,30,.9);backdrop-filter:blur(3px);border:1px solid var(--line);position:relative;clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
   .hud::before{content:"";position:absolute;left:0;top:0;width:34px;height:2px;background:var(--orange)}
   .hud h2,.hud h3{letter-spacing:.12em;text-transform:uppercase}
   .btn{font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:.45rem .9rem;border:1px solid var(--sand);color:var(--sand);background:transparent;cursor:pointer;font-size:.85rem;clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);transition:.15s}
@@ -37,28 +45,68 @@
   tr:hover td{background:rgba(216,189,130,.03)}
   .scroll-x{overflow-x:auto}
   .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:1rem;z-index:50}
+  .modal-bg > .hud{max-height:100%;overflow:auto;width:100%}
   #toast{position:fixed;bottom:1rem;right:1rem;z-index:60;display:flex;flex-direction:column;gap:.5rem}
   .toast{background:var(--panel2);border-left:3px solid var(--orange);padding:.6rem 1rem;max-width:320px}
   .toast.err{border-color:var(--bad)}
   .stat{font-size:2.2rem;font-weight:700;color:var(--sand);line-height:1}
+
+  /* ===== Giải đấu ===== */
+  .badge.mut{color:var(--mut);border-color:var(--line);background:transparent}
+  .badge.info{color:#7dd3fc;border-color:#7dd3fc;background:rgba(125,211,252,.08)}
+  a.btn{display:inline-block;text-decoration:none}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn:disabled:hover{background:transparent;color:var(--sand)}
+  .btn.pri:disabled:hover{background:var(--orange);color:#111}
+  .logo-mark{background:var(--orange);color:#111;font-weight:700;letter-spacing:.12em;padding:.35rem .7rem;font-size:1.3rem;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+  .toplink{cursor:pointer;color:var(--sand);letter-spacing:.1em;text-transform:uppercase;font-weight:700;font-size:.85rem}
+  .toplink:hover{color:var(--orange)}
+  .chip{padding:.4rem .9rem;border:1px solid var(--line);color:var(--mut);cursor:pointer;font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:.8rem;white-space:nowrap;background:rgba(10,10,9,.6)}
+  .chip:hover{border-color:var(--sand);color:var(--sand)}
+  .chip.on{color:#111;background:var(--orange);border-color:var(--orange)}
+  .hud.hero{padding:0;background-image:linear-gradient(90deg,rgba(8,10,10,.93) 0%,rgba(8,10,10,.72) 55%,rgba(8,10,10,.38) 100%),var(--banner);background-size:cover;background-position:center right}
+  .hero-in{padding:1.4rem}
+  @media(min-width:768px){.hero-in{padding:2.4rem}}
+  .hero-title{font-size:clamp(1.9rem,5vw,3.3rem);font-weight:700;letter-spacing:.08em;color:var(--sand);line-height:1.05;text-transform:uppercase;margin:.2rem 0 .4rem}
+  .tile{border:1px solid var(--line);background:rgba(10,10,9,.62);padding:.6rem .8rem}
+  .bar{height:6px;background:#0e0e0c;border:1px solid var(--line)}
+  .bar>i{display:block;height:100%;background:var(--orange)}
+  .mode{display:block;width:100%;text-align:left;border:1px solid var(--line);background:rgba(10,10,9,.6);padding:1rem;cursor:pointer;transition:.15s;color:inherit}
+  .mode:hover{border-color:var(--sand)}
+  .mode.on{border-color:var(--orange);box-shadow:inset 0 0 0 1px var(--orange)}
+  details.acc>summary{cursor:pointer;list-style:none;padding:.9rem 1.1rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--sand)}
+  details.acc>summary::-webkit-details-marker{display:none}
+  details.acc>summary::after{content:"+";float:right;color:var(--orange)}
+  details.acc[open]>summary::after{content:"–"}
+  details.acc .acc-body{padding:0 1.1rem 1.1rem}
+  details.faq{margin-bottom:.7rem}
+  details.faq>summary{cursor:pointer;font-weight:700;color:var(--text)}
+  .stp{padding:.25rem .7rem;border:1px solid var(--line);color:var(--mut);font-weight:700;font-size:.8rem;letter-spacing:.08em;text-transform:uppercase}
+  .stp.on{border-color:var(--orange);color:var(--orange)}
+  .stp.done{border-color:var(--ok);color:var(--ok)}
+  .inp.err{border-color:var(--bad)}
+  .ferr{color:var(--bad);font-size:.8rem;margin-top:.2rem}
+  textarea.inp{resize:vertical}
 </style>
 </head>
 <body>
+<div id="bg"><i></i><i></i><i></i></div>
 <div id="app"></div>
+<script src="config.js"></script>
 <div id="modal"></div>
 <div id="toast"></div>
 
 <script>
 /* ============================================================
-   CẤU HÌNH — điền 2 giá trị lấy từ Supabase > Project Settings > API
+   CẤU HÌNH — nằm trong file config.js (cùng thư mục). Lấy 2 giá trị ở Supabase > Project Settings > API
    Để trống = chạy CHẾ ĐỘ DEMO (dữ liệu lưu trong trình duyệt)
    ============================================================ */
 const CONFIG = {
-  SUPABASE_URL: 'https://ptzlvtfuhxxafjaehlwt.supabase.co',
-  SUPABASE_ANON_KEY: 'sb_publishable_u2K8IAzwJ2keXmuYQ3TB_A_8prNMApp'
-};
+  SUPABASE_URL: (window.CONFIG && window.CONFIG.SUPABASE_URL) || 'https://ptzlvtfuhxxafjaehlwt.supabase.co',
+  SUPABASE_ANON_KEY: (window.CONFIG && window.CONFIG.SUPABASE_ANON_KEY) || 'sb_publishable_u2K8IAzwJ2keXmuYQ3TB_A_8prNMApp'
+};  // khóa publishable là khóa công khai, an toàn khi để trong mã nguồn; TUYỆT ĐỐI không dán khóa secret/service_role
 
-const DEMO = !CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_ANON_KEY;
+const DEMO = (window.CONFIG && window.CONFIG.DEMO === true) || !CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_ANON_KEY;
 const sb = DEMO ? null : supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
 /* ---------- Tiện ích ---------- */
@@ -78,9 +126,12 @@ function toast(msg, err){
 const must = r => { if (r.error) throw r.error; return r.data; };
 const fileToDataURL = f => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(f); });
 const isAdmin = () => S.me && ['leader','captain'].includes(S.me.role);
+const isLeader = () => S.me && S.me.role === 'leader';
+// Captain chỉ được thêm/sửa/xóa thành viên có chức vụ "member"; Leader làm được tất cả
+const canManage = m => isLeader() || (isAdmin() && m.role === 'member');
 
 /* ---------- Trạng thái ---------- */
-const S = { user:null, me:null, view:'dash', members:[], periods:[], periodId:null, payments:[], settings:{}, demoRole:'admin' };
+const S = { user:null, me:null, view:'dash', members:[], periods:[], periodId:null, payments:[], settings:{}, demoRole:'leader' };
 
 /* ============================================================
    LỚP DỮ LIỆU — DEMO (localStorage)
@@ -104,7 +155,7 @@ const demoSave = d => localStorage.setItem(DKEY, JSON.stringify(d));
 const uid = () => 'id' + Math.random().toString(36).slice(2, 10);
 
 const api = DEMO ? {
-  async me(){ const d = demoLoad(); return S.demoRole === 'admin' ? d.members[0] : d.members[3]; },
+  async me(){ const d = demoLoad(); return ({leader:d.members[0], captain:d.members[1], member:d.members[3], guest:null})[S.demoRole] || null; },
   async members(){ return demoLoad().members; },
   async saveMember(m){ const d = demoLoad(); if (m.id){ d.members = d.members.map(x => x.id === m.id ? {...x, ...m} : x); } else { m.id = uid(); m.joined_at = new Date().toISOString(); d.members.push(m); d.payments.push(...d.periods.map(p => ({id:uid(),member_id:m.id,period_id:p.id,status:'unpaid'}))); } demoSave(d); },
   async removeMember(id){ const d = demoLoad(); d.members = d.members.filter(x => x.id !== id); d.payments = d.payments.filter(p => p.member_id !== id); demoSave(d); },
@@ -143,21 +194,23 @@ const api = DEMO ? {
    KHỞI ĐỘNG & ĐĂNG NHẬP
    ============================================================ */
 async function boot(){
-  if (DEMO){ await loadAll(); return render(); }
-  const { data } = await sb.auth.getSession();
-  S.user = data.session ? data.session.user : null;
-  if (!S.user) return renderLogin();
-  S.me = await api.me();
-  if (!S.me) return renderClaim();
+  if (!DEMO){ const { data } = await sb.auth.getSession(); S.user = data.session ? data.session.user : null; }
   await loadAll(); render();
 }
-if (!DEMO) sb.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_IN' || ev === 'SIGNED_OUT') boot(); });
+if (!DEMO) sb.auth.onAuthStateChange((ev, session) => {
+  const id = session && session.user ? session.user.id : null;
+  if ((ev === 'SIGNED_IN' || ev === 'SIGNED_OUT') && id !== (S.user ? S.user.id : null)) boot();
+});
 
 async function loadAll(){
-  S.me = await api.me();
-  [S.members, S.periods, S.settings] = await Promise.all([api.members(), api.periods(), api.settings()]);
-  if (!S.periods.find(p => p.id === S.periodId)) S.periodId = S.periods[0] ? S.periods[0].id : null;
-  S.payments = S.periodId ? await api.payments(S.periodId) : [];
+  if (DEMO) S.user = { id:'demo-' + S.demoRole };
+  S.me = S.user ? await api.me() : null;
+  if (S.me){
+    [S.members, S.periods, S.settings] = await Promise.all([api.members(), api.periods(), api.settings()]);
+    if (!S.periods.find(p => p.id === S.periodId)) S.periodId = S.periods[0] ? S.periods[0].id : null;
+    S.payments = S.periodId ? await api.payments(S.periodId) : [];
+  } else { S.members = []; S.periods = []; S.payments = []; S.settings = {}; S.periodId = null; S.view = 'tour'; }
+  await tourLoad();
 }
 async function refresh(){ try { await loadAll(); render(); } catch(e){ toast(e.message, true); } }
 
@@ -167,18 +220,20 @@ function renderLogin(){
     <div class="hud p-8 w-full max-w-md">
       <div class="mono text-xs" style="color:var(--orange)">// SECURE ACCESS</div>
       <h1 class="text-3xl font-bold tracking-widest mb-1" style="color:var(--sand)">CLAN HQ</h1>
-      <p class="mb-6" style="color:var(--mut)">Đăng nhập để vào trung tâm chỉ huy clan.</p>
+      <p class="mb-6" style="color:var(--mut)">Đăng nhập hoặc đăng ký tài khoản. Người ngoài clan vẫn đăng ký giải đấu được.</p>
       <button class="btn pri w-full mb-4" onclick="loginDiscord()">Đăng nhập bằng Discord</button>
       <div class="mono text-xs text-center mb-4" style="color:var(--mut)">— HOẶC EMAIL —</div>
       <label class="lbl">Email</label><input id="lg-email" class="inp mb-3" type="email">
       <label class="lbl">Mật khẩu</label><input id="lg-pass" class="inp mb-4" type="password">
       <div class="flex gap-2"><button class="btn flex-1" onclick="loginEmail()">Đăng nhập</button><button class="btn flex-1" onclick="signupEmail()">Đăng ký</button></div>
+      <button class="btn w-full mt-3" onclick="boot()">← Quay lại</button>
     </div>
   </div>`;
 }
 async function loginDiscord(){ const r = await sb.auth.signInWithOAuth({provider:'discord', options:{redirectTo:location.origin + location.pathname}}); if (r.error) toast(r.error.message, true); }
-async function loginEmail(){ const r = await sb.auth.signInWithPassword({email:$('#lg-email').value, password:$('#lg-pass').value}); if (r.error) toast(r.error.message, true); }
-async function signupEmail(){ const r = await sb.auth.signUp({email:$('#lg-email').value, password:$('#lg-pass').value}); if (r.error) toast(r.error.message, true); else toast('Đã đăng ký. Kiểm tra email xác nhận (nếu có bật) rồi đăng nhập.'); }
+function creds(){ const email = $('#lg-email').value.trim(), password = $('#lg-pass').value; if (!email || !password){ toast('Hãy tự gõ email và mật khẩu (tối thiểu 6 ký tự).', true); return null; } return { email, password }; }
+async function loginEmail(){ const c = creds(); if (!c) return; const r = await sb.auth.signInWithPassword(c); if (r.error) toast(r.error.message, true); }
+async function signupEmail(){ const c = creds(); if (!c) return; const r = await sb.auth.signUp(c); if (r.error) toast(r.error.message, true); else toast('Đã đăng ký. Kiểm tra email xác nhận (nếu có bật) rồi đăng nhập.'); }
 async function logout(){ await sb.auth.signOut(); }
 
 function renderClaim(){
@@ -189,7 +244,7 @@ function renderClaim(){
       <h2 class="text-2xl font-bold mb-2" style="color:var(--sand)">Liên kết tài khoản</h2>
       <p class="mb-4" style="color:var(--mut)">Nhập đúng <b>tên in-game</b> mà Leader/Captain đã thêm cho bạn trong danh sách clan.</p>
       <input id="claim-name" class="inp mb-4" placeholder="Tên in-game">
-      <div class="flex gap-2"><button class="btn pri flex-1" onclick="claim()">Liên kết</button><button class="btn flex-1" onclick="logout()">Thoát</button></div>
+      <div class="flex gap-2"><button class="btn pri flex-1" onclick="claim()">Liên kết</button><button class="btn flex-1" onclick="boot()">Quay lại</button></div>
     </div>
   </div>`;
 }
@@ -203,9 +258,11 @@ async function claim(){
    GIAO DIỆN CHÍNH
    ============================================================ */
 function render(){
-  const clan = esc(S.settings.clan_name || 'CLAN HQ');
-  const tabs = [['dash','Tổng quan'],['members','Thành viên'],['fund','Quỹ clan']];
-  if (isAdmin()) tabs.push(['settings','Cài đặt']);
+  if (!S.me && S.view !== 'tour') S.view = 'tour';
+  const clan = esc((S.me && S.settings.clan_name) || 'CLAN LAG');
+  const tabs = S.me ? [['dash','Tổng quan'],['members','Thành viên'],['fund','Quỹ clan']] : [];
+  tabs.push(['tour','Đăng ký giải']);
+  if (isLeader()) tabs.push(['settings','Cài đặt']);
   $('#app').innerHTML = `
   <header class="border-b" style="border-color:var(--line);background:rgba(10,10,9,.85)">
     <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center gap-3 justify-between">
@@ -215,23 +272,23 @@ function render(){
       </div>
       <div class="flex items-center gap-3 flex-wrap">
         <div class="text-right">
-          <div class="font-bold">${esc(S.me.ingame_name)}</div>
-          <div class="mono text-xs" style="color:var(--mut)">${ROLE[S.me.role]}${isAdmin() ? ' · ADMIN' : ''}</div>
+          <div class="font-bold">${esc(S.me ? S.me.ingame_name : ((S.user && S.user.email) || 'Khách'))}</div>
+          <div class="mono text-xs" style="color:var(--mut)">${S.me ? ROLE[S.me.role] + (isAdmin() ? ' · ADMIN' : '') : (S.user ? 'Khách · ngoài clan' : 'Chưa đăng nhập')}</div>
         </div>
-        ${DEMO ? `<button class="btn sm" onclick="toggleDemoRole()">Demo: xem như ${S.demoRole === 'admin' ? 'Thành viên' : 'Admin'}</button><button class="btn sm bad" onclick="resetDemo()">Reset demo</button>` : `<button class="btn sm" onclick="logout()">Đăng xuất</button>`}
+        ${DEMO ? `<button class="btn sm" onclick="toggleDemoRole()">Demo: ${S.me ? ROLE[S.me.role] : 'Khách ngoài clan'} (bấm để đổi)</button><button class="btn sm bad" onclick="resetDemo()">Reset demo</button>` : authButtons()}
       </div>
     </div>
     <nav class="max-w-6xl mx-auto px-4 flex gap-1 overflow-x-auto">
       ${tabs.map(t => `<div class="tab ${S.view === t[0] ? 'on' : ''}" onclick="setView('${t[0]}')">${t[1]}</div>`).join('')}
     </nav>
   </header>
-  ${DEMO ? `<div class="mono text-xs text-center py-1" style="background:rgba(255,122,26,.12);color:var(--orange)">CHẾ ĐỘ DEMO — dữ liệu chỉ lưu trong trình duyệt này. Điền khóa Supabase vào CONFIG để dùng dữ liệu thật.</div>` : ''}
+  ${DEMO ? `<div class="mono text-xs text-center py-1" style="background:rgba(255,122,26,.12);color:var(--orange)">CHẾ ĐỘ DEMO — dữ liệu chỉ lưu trong trình duyệt này. Bỏ DEMO trong config.js để dùng dữ liệu thật.</div>` : ''}
   <main class="max-w-6xl mx-auto px-4 py-6" id="view"></main>`;
-  ({dash:viewDash, members:viewMembers, fund:viewFund, settings:viewSettings})[S.view]();
+  ({dash:viewDash, members:viewMembers, fund:viewFund, settings:viewSettings, tour:viewTour})[S.view]();
 }
 function setView(v){ S.view = v; render(); }
-async function toggleDemoRole(){ S.demoRole = S.demoRole === 'admin' ? 'member' : 'admin'; if (S.view === 'settings') S.view = 'dash'; await refresh(); }
-function resetDemo(){ if (confirm('Xóa toàn bộ dữ liệu demo?')){ api.resetDemo(); S.periodId = null; refresh(); } }
+async function toggleDemoRole(){ S.demoRole = ({leader:'captain', captain:'member', member:'guest', guest:'leader'})[S.demoRole]; TS.reg = null; TS.done = null; TS.detailId = null; TS.sub = 'home'; if (S.view === 'settings' && S.demoRole !== 'leader') S.view = 'dash'; await refresh(); }
+function resetDemo(){ if (confirm('Xóa toàn bộ dữ liệu demo?')){ api.resetDemo(); localStorage.removeItem(TKEY); TS.reg = null; TS.done = null; TS.detailId = null; S.periodId = null; refresh(); } }
 
 /* ---------- Tổng quan ---------- */
 function viewDash(){
@@ -253,7 +310,7 @@ function viewDash(){
       <h3 class="font-bold mb-3" style="color:var(--sand)">Kỳ hiện tại</h3>
       ${per ? `<div class="text-xl font-bold">${esc(per.label)}</div><div style="color:var(--mut)">Mức đóng: ${money(per.amount)}${per.due_date ? ' · Hạn: ' + esc(per.due_date) : ''}</div>
         ${mine ? `<div class="mt-4">Trạng thái của bạn: ${badge(mine.status)}</div>${mine.status === 'unpaid' ? `<button class="btn pri mt-3" onclick="setView('fund')">Đóng quỹ ngay</button>` : ''}` : ''}`
-      : `<div style="color:var(--mut)">Chưa có kỳ đóng quỹ nào.${isAdmin() ? ' Vào tab Quỹ clan để tạo kỳ mới.' : ''}</div>`}
+      : `<div style="color:var(--mut)">Chưa có kỳ đóng quỹ nào.${isLeader() ? ' Vào tab Quỹ clan để tạo kỳ mới.' : isAdmin() ? ' Nhờ Leader tạo kỳ mới.' : ''}</div>`}
     </div>
     <div class="hud p-5">
       <h3 class="font-bold mb-3" style="color:var(--sand)">${isAdmin() ? 'Bill đang chờ duyệt' : 'Đồng đội chưa đóng'}</h3>
@@ -271,7 +328,7 @@ function viewMembers(){
     <td class="mono">${esc(m.discord_id || '—')}</td>
     <td><span class="badge ${m.role === 'leader' ? 'warn' : m.role === 'captain' ? 'ok' : ''}" style="${m.role === 'member' ? 'color:var(--mut);border-color:var(--line)' : ''}">${ROLE[m.role].toUpperCase()}</span></td>
     <td>${esc(m.rank || '—')}</td><td>${esc(m.playstyle || '—')}</td>
-    ${isAdmin() ? `<td class="whitespace-nowrap"><button class="btn sm" onclick="memberForm('${m.id}')">Sửa</button> <button class="btn sm bad" onclick="delMember('${m.id}')">Xóa</button></td>` : ''}
+    ${isAdmin() ? (canManage(m) ? `<td class="whitespace-nowrap"><button class="btn sm" onclick="memberForm('${m.id}')">Sửa</button> <button class="btn sm bad" onclick="delMember('${m.id}')">Xóa</button></td>` : `<td></td>`) : ''}
   </tr>`).join('');
   $('#view').innerHTML = `
   <div class="hud p-5">
@@ -280,8 +337,9 @@ function viewMembers(){
     <div class="scroll-x"><table><thead><tr><th>In-game</th><th>Discord</th><th>Chức vụ</th><th>Rank</th><th>Lối chơi</th>${isAdmin() ? '<th></th>' : ''}</tr></thead><tbody>${rows}</tbody></table></div>
   </div>`;
 }
-function openModal(html){ $('#modal').innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="hud p-6 w-full max-w-md max-h-full overflow-auto">${html}</div></div>`; }
-function closeModal(){ $('#modal').innerHTML = ''; }
+function openModal(html, wide){ $('#modal').innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="hud p-6 w-full ${wide ? 'max-w-3xl' : 'max-w-md'} max-h-full overflow-auto">${html}</div></div>`; }
+let askResolve = null;
+function closeModal(){ $('#modal').innerHTML = ''; if (askResolve){ const f = askResolve; askResolve = null; f(null); } }
 function memberForm(id){
   const m = S.members.find(x => x.id === id) || {role:'member', is_active:true};
   openModal(`
@@ -289,7 +347,7 @@ function memberForm(id){
     <label class="lbl">Tên in-game</label><input id="f-name" class="inp mb-3" value="${esc(m.ingame_name || '')}">
     <label class="lbl">Discord ID</label><input id="f-dc" class="inp mb-3" value="${esc(m.discord_id || '')}">
     <label class="lbl">Chức vụ</label>
-    <select id="f-role" class="inp mb-3">${Object.keys(ROLE).map(r => `<option value="${r}" ${m.role === r ? 'selected' : ''}>${ROLE[r]}</option>`).join('')}</select>
+    <select id="f-role" class="inp mb-3">${(isLeader() ? Object.keys(ROLE) : ['member']).map(r => `<option value="${r}" ${m.role === r ? 'selected' : ''}>${ROLE[r]}</option>`).join('')}</select>
     <div class="grid grid-cols-2 gap-3 mb-3">
       <div><label class="lbl">Rank</label><input id="f-rank" class="inp" value="${esc(m.rank || '')}"></div>
       <div><label class="lbl">Lối chơi</label><input id="f-play" class="inp" value="${esc(m.playstyle || '')}"></div>
@@ -328,7 +386,7 @@ function viewFund(){
   <div class="flex flex-wrap gap-3 items-center mb-4">
     <select class="inp" style="max-width:260px" onchange="pickPeriod(this.value)">${S.periods.map(p => `<option value="${p.id}" ${p.id === S.periodId ? 'selected' : ''}>${esc(p.label)}</option>`).join('') || '<option>— chưa có kỳ —</option>'}</select>
     ${per ? `<span class="mono" style="color:var(--mut)">Mức đóng: ${money(per.amount)}${per.due_date ? ' · Hạn ' + esc(per.due_date) : ''}</span>` : ''}
-    ${isAdmin() ? `<button class="btn pri ml-auto" onclick="periodForm()">+ Tạo kỳ mới</button>` : ''}
+    ${isLeader() ? `<button class="btn pri ml-auto" onclick="periodForm()">+ Tạo kỳ mới</button>` : ''}
   </div>
   <div class="grid lg:grid-cols-3 gap-4">
     <div class="hud p-5 lg:col-span-2">
@@ -408,5 +466,852 @@ async function saveSettings(){
   try { await api.saveSettings(s, $('#s-qr').files[0]); toast('Đã lưu cài đặt'); refresh(); } catch(e){ toast(e.message, true); }
 }
 
+/* ===== MODULE GIẢI ĐẤU (từ tournament.js) ===== */
+/* ============================================================
+   MODULE GIẢI ĐẤU (tab "Đăng ký giải")
+   Được ghép vào index.html bằng build.py. Dùng chung S, DEMO, sb, $, esc, money, toast, openModal...
+   ============================================================ */
+const MODES = {
+  solo:  { label:'Solo',  min:1, max:1, desc:'1 người chơi' },
+  duo:   { label:'Duo',   min:2, max:2, desc:'2 người chơi' },
+  squad: { label:'Squad', min:3, max:4, desc:'3–4 người chơi' }
+};
+// Trạng thái DUYỆT HỒ SƠ và trạng thái THANH TOÁN được quản lý riêng
+const REV = {
+  draft:['BẢN NHÁP','mut'], pending:['ĐÃ GỬI HỒ SƠ · CHỜ DUYỆT','warn'], need_info:['CẦN BỔ SUNG','warn'],
+  approved:['ĐÃ DUYỆT','ok'], rejected:['BỊ TỪ CHỐI','bad'], confirmed:['ĐÃ XÁC NHẬN THAM GIA','ok'], cancelled:['ĐÃ HỦY','mut']
+};
+const PAY = {
+  unpaid:['CHƯA THANH TOÁN','bad'], proof_sent:['CHỜ XÁC NHẬN THANH TOÁN','warn'], paid:['ĐÃ THANH TOÁN','ok']
+};
+const ACTIVE = ['pending','need_info','approved','confirmed'];
+const DEAD = ['cancelled','rejected'];
+const UID_RE = /^\d{5,15}$/;   // UID chỉ gồm 5–15 chữ số. Đổi ở đây (và trong SQL) nếu UID game có dạng khác.
+const STEP_T = { mode:'Thể thức', info:'Thông tin đội', members:'Thành viên', confirm:'Xác nhận' };
+
+const TS = {
+  list:[], tid:null, sub:'home', stats:{registered:0, approved:0}, teams:[], myRegs:[], error:null,
+  reg:null, step:1, errs:{}, done:null, detailId:null, msgs:[], q:'',
+  staff:{ regs:[], logs:[], filter:'all', q:'', showLogs:false }
+};
+
+const tb = (map, k) => { const x = map[k] || [String(k), 'mut']; return `<span class="badge ${x[1]}">${x[0]}</span>`; };
+const errMsg = e => (e && (e.message || e.error_description)) || 'Có lỗi xảy ra, hãy thử lại.';
+const curT = () => TS.list.find(t => t.id === TS.tid) || null;
+const curUid = () => DEMO ? 'demo-' + S.demoRole : (S.user ? S.user.id : null);
+const fmtDT = s => s ? new Date(s).toLocaleString('vi-VN', {dateStyle:'short', timeStyle:'short'}) : '—';
+const feeOf = (t, mode) => Number((t && t['fee_' + mode]) || 0);
+const toLocalInput = s => { if (!s) return ''; const d = new Date(s), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; };
+const fromLocalInput = v => v ? new Date(v).toISOString() : null;
+const faqToText = f => (f || []).map(x => x.q + '\n' + x.a).join('\n\n');
+const textToFaq = s => s.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean).map(b => { const i = b.indexOf('\n'); return i < 0 ? {q:b, a:''} : {q:b.slice(0, i).trim(), a:b.slice(i + 1).trim()}; });
+
+/* ---------- Nút bấm có trạng thái "đang xử lý" + thông báo lỗi ---------- */
+async function act(btn, fn, okMsg){
+  if (btn && btn.disabled) return;
+  const old = btn ? btn.textContent : '';
+  if (btn){ btn.disabled = true; btn.textContent = 'Đang xử lý…'; btn.style.opacity = '.6'; }
+  try { const r = await fn(); if (okMsg) toast(okMsg); return r; }
+  catch (e){ console.error(e); toast(errMsg(e), true); }
+  finally { if (btn && btn.isConnected){ btn.disabled = false; btn.textContent = old; btn.style.opacity = ''; } }
+}
+function askText(title, label, opts){
+  opts = opts || {};
+  return new Promise(res => {
+    askResolve = res;
+    openModal(`<h3 class="text-lg font-bold mb-3" style="color:var(--sand)">${esc(title)}</h3>
+      <label class="lbl">${esc(label)}</label>
+      <textarea id="ask-t" class="inp mb-4" rows="4" maxlength="${opts.max || 500}"></textarea>
+      <div class="flex gap-2"><button class="btn pri flex-1" onclick="askOk(${opts.required === false ? 'false' : 'true'})">${esc(opts.ok || 'Gửi')}</button><button class="btn flex-1" onclick="closeModal()">Hủy</button></div>`);
+    setTimeout(() => { const el = $('#ask-t'); if (el) el.focus(); }, 30);
+  });
+}
+function askOk(required){
+  const v = $('#ask-t').value.trim();
+  if (required && !v) return toast('Cần nhập nội dung.', true);
+  const f = askResolve; askResolve = null; $('#modal').innerHTML = ''; if (f) f(v);
+}
+async function copyText(el){
+  const txt = el.dataset.copy;
+  try { await navigator.clipboard.writeText(txt); toast('Đã sao chép'); }
+  catch (e){ const ta = document.createElement('textarea'); ta.value = txt; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); toast('Đã sao chép'); } catch (_){ toast('Không sao chép được, hãy chép tay.', true); } ta.remove(); }
+}
+function shrinkImage(file, max){
+  max = max || 900;
+  return new Promise((res, rej) => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => { const k = Math.min(1, max / Math.max(img.width, img.height)); const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url); res(c.toDataURL('image/jpeg', .7)); };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('Không đọc được ảnh.')); };
+    img.src = url;
+  });
+}
+function checkImage(f){
+  if (!f) throw new Error('Hãy chọn một ảnh.');
+  if (!/^image\/(jpeg|png|webp)$/.test(f.type)) throw new Error('Chỉ nhận ảnh JPG, PNG hoặc WEBP.');
+  if (f.size > 5 * 1024 * 1024) throw new Error('Ảnh tối đa 5MB.');
+}
+
+/* ---------- Luật kiểm tra dữ liệu (cùng luật với SQL ở máy chủ) ---------- */
+function windowState(t){
+  const now = Date.now();
+  if (t.status !== 'open') return { open:false, reason: ['ongoing','finished'].includes(t.status) ? 'Giải đã bắt đầu hoặc đã kết thúc.' : 'Ban tổ chức đã đóng đăng ký.' };
+  if (t.reg_open_at && now < Date.parse(t.reg_open_at)) return { open:false, reason:'Chưa đến thời gian mở đăng ký.' };
+  if (t.reg_close_at && now > Date.parse(t.reg_close_at)) return { open:false, reason:'Đã hết thời gian đăng ký.' };
+  return { open:true };
+}
+function regState(t){
+  if (!t) return { open:false, reason:'Chưa có giải đấu.' };
+  const w = windowState(t); if (!w.open) return w;
+  if (TS.stats.registered >= t.max_teams) return { open:false, reason:'Giải đã đủ số đội tối đa.' };
+  return w;
+}
+function tStatus(t){
+  if (t.status === 'finished') return ['ĐÃ KẾT THÚC', 'mut'];
+  if (t.status === 'ongoing') return ['ĐANG THI ĐẤU', 'info'];
+  if (t.status === 'draft') return ['NHÁP · CHƯA CÔNG KHAI', 'mut'];
+  if (regState(t).open) return ['ĐANG MỞ ĐĂNG KÝ', 'ok'];
+  if (t.status === 'open' && t.reg_open_at && Date.now() < Date.parse(t.reg_open_at)) return ['SẮP MỞ ĐĂNG KÝ', 'warn'];
+  if (t.status === 'open' && TS.stats.registered >= t.max_teams) return ['ĐÃ ĐỦ ĐỘI', 'warn'];
+  return ['ĐÃ ĐÓNG ĐĂNG KÝ', 'bad'];
+}
+const grp = f => f === 'mode' ? 'mode' : f === 'terms' ? 'confirm' : (f === 'members' || /^m\d+_/.test(f)) ? 'members' : 'info';
+function validateReg(d, t, level){
+  const e = [], M = MODES[d.mode], add = (f, m) => e.push({ f, m });
+  const L = (s, a, b) => { s = (s || '').trim(); return s.length >= a && s.length <= b; };
+  if (!M){ add('mode', 'Hãy chọn thể thức Solo, Duo hoặc Squad.'); return e; }
+  const full = level === 'full', ms = d.members || [];
+  if (full ? !L(d.team_name, 3, 30) : (d.team_name || '').trim().length > 30) add('team_name', 'Tên đội cần từ 3 đến 30 ký tự.');
+  if (full ? !L(d.captain_name, 2, 60) : (d.captain_name || '').trim().length > 60) add('captain_name', 'Nhập tên đội trưởng (2–60 ký tự).');
+  if (full ? !L(d.captain_ingame, 2, 30) : (d.captain_ingame || '').trim().length > 30) add('captain_ingame', 'Tên trong game 2–30 ký tự.');
+  const cu = (d.captain_uid || '').trim();
+  if (full ? !UID_RE.test(cu) : (cu && !UID_RE.test(cu))) add('captain_uid', 'UID chỉ gồm 5–15 chữ số.');
+  if (full ? !L(d.contact, 3, 60) : (d.contact || '').trim().length > 60) add('contact', 'Nhập Discord hoặc Zalo liên hệ (3–60 ký tự).');
+  if ((d.substitute || '').trim().length > 60) add('substitute', 'Tối đa 60 ký tự.');
+  if (ms.length > M.max - 1) add('members', 'Thể thức ' + M.label + ' tối đa ' + M.max + ' người chơi.');
+  if (full && ms.length < M.min - 1) add('members', 'Thể thức ' + M.label + ' cần tối thiểu ' + M.min + ' người chơi (kể cả đội trưởng).');
+  ms.forEach((m, i) => {
+    const u = (m.uid || '').trim();
+    if (full ? !L(m.ingame, 2, 30) : (m.ingame || '').trim().length > 30) add('m' + i + '_ingame', 'Tên trong game 2–30 ký tự.');
+    if (full ? !UID_RE.test(u) : (u && !UID_RE.test(u))) add('m' + i + '_uid', 'UID chỉ gồm 5–15 chữ số.');
+  });
+  const uids = [cu, ...ms.map(m => (m.uid || '').trim())].filter(Boolean);
+  if (new Set(uids).size !== uids.length) add('members', 'Có UID bị trùng trong cùng một đội.');
+  if (full && !d.terms_accepted) add('terms', 'Bạn cần xác nhận đã đọc và đồng ý điều lệ giải đấu.');
+  return e;
+}
+const cleanReg = d => ({
+  mode:d.mode, team_name:(d.team_name || '').trim(), captain_name:(d.captain_name || '').trim(), captain_ingame:(d.captain_ingame || '').trim(),
+  captain_uid:(d.captain_uid || '').trim(), contact:(d.contact || '').trim(), substitute:(d.substitute || '').trim() || null,
+  members:(d.members || []).map(m => ({ ingame:(m.ingame || '').trim(), uid:(m.uid || '').trim() })), terms_accepted:!!d.terms_accepted
+});
+
+/* ============================================================
+   LỚP DỮ LIỆU — DEMO (lưu trong trình duyệt)
+   ============================================================ */
+const TKEY = 'clan_hq_tour_demo_v1';
+const tdId = () => 'x' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+const tdSave = d => localStorage.setItem(TKEY, JSON.stringify(d));
+const tdCode = d => { let c; do { c = 'LAG-' + Math.random().toString(36).slice(2, 8).toUpperCase(); } while (d.regs.some(r => r.code === c)); return c; };
+const tdActive = (d, tid) => d.regs.filter(r => r.tournament_id === tid && ACTIVE.includes(r.review_status)).length;
+function tdLoad(){
+  let d = null; try { d = JSON.parse(localStorage.getItem(TKEY)); } catch (e){}
+  if (!d){
+    const now = Date.now(), day = 864e5, iso = ms => new Date(ms).toISOString();
+    const t = { id:'t1', slug:'lag-open-s1', name:'CLAN LAG OPEN – MÙA 1', subtitle:'Giải đấu Arena Breakout dành cho cộng đồng CLAN LAG', banner_url:null, status:'open',
+      reg_open_at:iso(now - day), reg_close_at:iso(now + 14 * day), start_at:iso(now + 21 * day), max_teams:32, prize_total:'5.000.000đ',
+      fee_solo:30000, fee_duo:60000, fee_squad:120000, allow_substitute:true,
+      rules:'(Nội dung mẫu — ban tổ chức chỉnh sửa lại)\n1. Người chơi phải có tài khoản Arena Breakout hợp lệ và cung cấp đúng UID.\n2. Mỗi người chơi chỉ được thuộc một đội trong cùng một giải.\n3. Nghiêm cấm gian lận, dùng phần mềm hỗ trợ trái phép, cố ý bug game.\n4. Quyết định của ban tổ chức là quyết định cuối cùng.',
+      format_text:'(Nội dung mẫu)\nThể thức Solo, Duo, Squad. Thi đấu nhiều trận, tính điểm theo thành tích từng trận.',
+      prize_structure:'(Nội dung mẫu)\nHạng 1: 50%\nHạng 2: 30%\nHạng 3: 20%',
+      schedule:'(Nội dung mẫu)\nCông bố danh sách đội: 1 ngày trước giải.\nThi đấu: theo thông báo của ban tổ chức.',
+      member_rules:'(Nội dung mẫu)\nSolo 1 người, Duo 2 người, Squad 3–4 người. Mỗi đội có thể đăng ký tối đa 1 thành viên dự bị nếu giải cho phép.',
+      refund_policy:'(Nội dung mẫu)\nHủy trước khi hồ sơ được duyệt: hoàn 100% lệ phí. Sau khi đã duyệt: theo quyết định của ban tổ chức.',
+      faq:[{ q:'Tôi cần gì để đăng ký?', a:'Tài khoản đăng nhập, UID Arena Breakout của cả đội và Discord hoặc Zalo liên hệ.' }, { q:'Bao lâu thì hồ sơ được duyệt?', a:'Ban tổ chức duyệt sớm nhất có thể; bạn theo dõi ở mục Hồ sơ của tôi.' }],
+      contact:'Discord CLAN LAG (ban tổ chức cập nhật liên hệ tại đây)', bank_name:'Vietcombank', bank_bin:'', bank_account:'0123456789', account_holder:'NGUYEN VAN A', qr_image_url:null, created_at:iso(now - 3 * day) };
+    const mk = o => Object.assign({ id:tdId(), tournament_id:'t1', members:[], substitute:null, terms_accepted:true, payment_status:'unpaid', staff_note:null, proof_path:null, proof_at:null, paid_at:null, points:0, created_at:iso(now - 2 * day), updated_at:iso(now - day), submitted_at:iso(now - 2 * day) }, o);
+    const regs = [
+      mk({ code:'LAG-7K2P9A', owner_id:'seed1', mode:'squad', team_name:'Shadow Wolves', captain_name:'Tran Minh', captain_ingame:'WolfLead', captain_uid:'10000001', contact:'wolf#1234', members:[{ ingame:'WolfTwo', uid:'10000002' }, { ingame:'WolfThree', uid:'10000003' }, { ingame:'WolfFour', uid:'10000004' }], review_status:'confirmed', payment_status:'paid', paid_at:iso(now - day), points:240 }),
+      mk({ code:'LAG-4D8Q1C', owner_id:'seed2', mode:'duo', team_name:'Night Owls', captain_name:'Le Hoa', captain_ingame:'OwlOne', captain_uid:'20000001', contact:'zalo 0900000001', members:[{ ingame:'OwlTwo', uid:'20000002' }], review_status:'pending', payment_status:'proof_sent', proof_at:iso(now - 3600e3) }),
+      mk({ code:'LAG-9M3X5B', owner_id:'seed3', mode:'solo', team_name:'Lone Viper', captain_name:'Pham Nam', captain_ingame:'LoneViper', captain_uid:'30000001', contact:'viper#7777', review_status:'need_info', staff_note:'UID chưa đúng, vui lòng kiểm tra lại.' })
+    ];
+    d = { tournaments:[t], regs, msgs:[{ id:tdId(), registration_id:regs[2].id, sender:'staff', body:'UID chưa đúng, vui lòng kiểm tra lại.', created_at:iso(now - 3600e3) }], logs:[] };
+    tdSave(d);
+  }
+  return d;
+}
+function tdNeedAdmin(){ if (!isAdmin()) throw new Error('Chỉ ban tổ chức mới thực hiện được thao tác này.'); }
+function tdLog(d, tid, rid, action, detail){
+  d.logs.unshift({ id:tdId(), tournament_id:tid, registration_id:rid, actor_id:curUid(), actor_name:S.me ? S.me.ingame_name : 'Khách', action, detail:detail || '', created_at:new Date().toISOString() });
+  d.logs = d.logs.slice(0, 300);
+}
+const tapiDemo = {
+  async list(){ const d = tdLoad(); return d.tournaments.filter(t => t.status !== 'draft' || isAdmin()).slice().sort((a, b) => (b.created_at || '').localeCompare(a.created_at || '')); },
+  async stats(tid){ const d = tdLoad(); return { registered:tdActive(d, tid), approved:d.regs.filter(r => r.tournament_id === tid && ['approved','confirmed'].includes(r.review_status)).length }; },
+  async teams(tid){ const d = tdLoad(); return d.regs.filter(r => r.tournament_id === tid && ['approved','confirmed'].includes(r.review_status)).map(r => ({ team_name:r.team_name, mode:r.mode, review_status:r.review_status, points:r.points })).sort((a, b) => b.points - a.points || a.team_name.localeCompare(b.team_name)); },
+  async myRegs(){ const d = tdLoad(), u = curUid(); return d.regs.filter(r => r.owner_id === u).sort((a, b) => b.created_at.localeCompare(a.created_at)); },
+  async save(tid, id, data, submit){
+    const d = tdLoad(), uid = curUid();
+    if (!uid) throw new Error('Bạn cần đăng nhập để đăng ký.');
+    const t = d.tournaments.find(x => x.id === tid && x.status !== 'draft'); if (!t) throw new Error('Không tìm thấy giải đấu.');
+    let r = id ? d.regs.find(x => x.id === id && x.owner_id === uid) : null;
+    if (id && !r) throw new Error('Không tìm thấy hồ sơ.');
+    if (r && !['draft','need_info'].includes(r.review_status)) throw new Error('Hồ sơ này hiện không thể chỉnh sửa.');
+    const c = cleanReg(data), errs = validateReg(c, t, submit ? 'full' : 'draft'); if (errs.length) throw new Error(errs[0].m);
+    const was = r ? r.review_status : null;
+    if (!was || was === 'draft'){
+      const w = windowState(t); if (!w.open) throw new Error('Giải đấu hiện không mở đăng ký.');
+      if (submit && tdActive(d, tid) >= t.max_teams) throw new Error('Giải đã đủ số đội tối đa.');
+    } else if (!['open','closed'].includes(t.status)) throw new Error('Giải đã bắt đầu, không thể chỉnh sửa hồ sơ.');
+    if (c.substitute && !t.allow_substitute) throw new Error('Giải này không cho phép thành viên dự bị.');
+    if (submit){
+      const others = d.regs.filter(x => x.tournament_id === tid && ACTIVE.includes(x.review_status) && x.id !== id);
+      if (others.some(x => x.team_name.toLowerCase() === c.team_name.toLowerCase())) throw new Error('Tên đội "' + c.team_name + '" đã có người đăng ký.');
+      const mine = [c.captain_uid, ...c.members.map(m => m.uid)];
+      if (others.some(x => [x.captain_uid, ...(x.members || []).map(m => m.uid)].some(u => mine.includes(u)))) throw new Error('Có UID đã được đăng ký ở một đội khác.');
+    }
+    if (!r){
+      if (d.regs.some(x => x.tournament_id === tid && x.owner_id === uid && !DEAD.includes(x.review_status))) throw new Error('Bạn đã có một hồ sơ cho giải này. Hãy vào "Hồ sơ của tôi" để tiếp tục.');
+      r = { id:tdId(), code:null, tournament_id:tid, owner_id:uid, review_status:'draft', payment_status:'unpaid', staff_note:null, proof_path:null, proof_at:null, paid_at:null, points:0, submitted_at:null, created_at:new Date().toISOString() };
+      d.regs.push(r);
+    }
+    Object.assign(r, c, { updated_at:new Date().toISOString() });
+    if (submit){ r.review_status = 'pending'; if (!r.code) r.code = tdCode(d); r.submitted_at = r.submitted_at || new Date().toISOString(); }
+    tdLog(d, tid, r.id, submit ? 'submit' : 'save_draft', c.team_name); tdSave(d);
+    return JSON.parse(JSON.stringify(r));
+  },
+  async markTransferred(id, file){
+    const d = tdLoad(), r = d.regs.find(x => x.id === id && x.owner_id === curUid()); if (!r) throw new Error('Không tìm thấy hồ sơ.');
+    if (r.review_status === 'draft') throw new Error('Hãy gửi hồ sơ trước khi thanh toán.');
+    if (DEAD.includes(r.review_status)) throw new Error('Hồ sơ này không còn hiệu lực.');
+    if (r.payment_status === 'paid') throw new Error('Lệ phí đã được ban tổ chức xác nhận.');
+    if (file) r.proof_path = await shrinkImage(file);
+    r.payment_status = 'proof_sent'; r.proof_at = new Date().toISOString();
+    tdLog(d, r.tournament_id, id, 'payment_reported', file ? 'Gửi minh chứng' : 'Báo đã chuyển khoản'); tdSave(d); return r;
+  },
+  async cancel(id){
+    const d = tdLoad(), r = d.regs.find(x => x.id === id && x.owner_id === curUid()); if (!r) throw new Error('Không tìm thấy hồ sơ.');
+    if (DEAD.includes(r.review_status)) throw new Error('Hồ sơ đã ở trạng thái kết thúc.');
+    const t = d.tournaments.find(x => x.id === r.tournament_id); if (['ongoing','finished'].includes(t.status)) throw new Error('Giải đã bắt đầu, không thể hủy đăng ký.');
+    r.review_status = 'cancelled'; tdLog(d, r.tournament_id, id, 'cancel', r.payment_status === 'paid' ? 'Hủy (đã thanh toán — xử lý hoàn phí theo chính sách)' : 'Hủy đăng ký'); tdSave(d); return r;
+  },
+  async messages(rid){ const d = tdLoad(); return d.msgs.filter(m => m.registration_id === rid).sort((a, b) => a.created_at.localeCompare(b.created_at)); },
+  async postMessage(rid, body){
+    const d = tdLoad(), r = d.regs.find(x => x.id === rid); body = (body || '').trim();
+    if (!r) throw new Error('Không tìm thấy hồ sơ.');
+    if (body.length < 1 || body.length > 1000) throw new Error('Nội dung tin nhắn từ 1 đến 1000 ký tự.');
+    const sender = r.owner_id === curUid() ? 'player' : isAdmin() ? 'staff' : null; if (!sender) throw new Error('Bạn không có quyền với hồ sơ này.');
+    d.msgs.push({ id:tdId(), registration_id:rid, sender, body, created_at:new Date().toISOString() }); tdLog(d, r.tournament_id, rid, 'message_' + sender, body); tdSave(d);
+  },
+  async proofUrl(path){ return path; },
+  async staffRegs(tid){ tdNeedAdmin(); return tdLoad().regs.filter(r => r.tournament_id === tid && r.review_status !== 'draft').sort((a, b) => (b.submitted_at || '').localeCompare(a.submitted_at || '')); },
+  async staffReview(id, status, note){
+    tdNeedAdmin(); const d = tdLoad(), r = d.regs.find(x => x.id === id); note = (note || '').trim();
+    if (!r) throw new Error('Không tìm thấy hồ sơ.');
+    if (r.review_status === 'draft') throw new Error('Hồ sơ nháp chưa được gửi.');
+    if (DEAD.includes(r.review_status)) throw new Error('Hồ sơ đã bị từ chối hoặc hủy. Người chơi cần đăng ký lại.');
+    if (['rejected','need_info'].includes(status) && !note) throw new Error('Cần nhập lý do hoặc nội dung yêu cầu gửi người chơi.');
+    if (status === 'confirmed'){ const t = d.tournaments.find(x => x.id === r.tournament_id); if (!['approved','confirmed'].includes(r.review_status) || (r.payment_status !== 'paid' && feeOf(t, r.mode) > 0)) throw new Error('Chỉ xác nhận tham gia khi hồ sơ đã duyệt và đã nhận lệ phí.'); }
+    r.review_status = status; if (note) r.staff_note = note;
+    if (note && ['rejected','need_info'].includes(status)) d.msgs.push({ id:tdId(), registration_id:id, sender:'staff', body:note, created_at:new Date().toISOString() });
+    tdLog(d, r.tournament_id, id, 'review_' + status, note); tdSave(d);
+  },
+  async staffPayment(id, status, note){
+    tdNeedAdmin(); const d = tdLoad(), r = d.regs.find(x => x.id === id); note = (note || '').trim();
+    if (!r) throw new Error('Không tìm thấy hồ sơ.'); if (r.review_status === 'draft') throw new Error('Hồ sơ nháp chưa được gửi.');
+    r.payment_status = status; r.paid_at = status === 'paid' ? new Date().toISOString() : null;
+    if (status !== 'paid' && r.review_status === 'confirmed') r.review_status = 'approved';
+    if (status === 'unpaid' && note) d.msgs.push({ id:tdId(), registration_id:id, sender:'staff', body:note, created_at:new Date().toISOString() });
+    tdLog(d, r.tournament_id, id, 'payment_' + status, note); tdSave(d);
+  },
+  async staffPoints(id, n){
+    tdNeedAdmin(); const d = tdLoad(), r = d.regs.find(x => x.id === id); if (!r) throw new Error('Không tìm thấy hồ sơ.');
+    if (!Number.isInteger(n) || n < 0 || n > 100000) throw new Error('Điểm không hợp lệ.');
+    r.points = n; tdLog(d, r.tournament_id, id, 'points', String(n)); tdSave(d);
+  },
+  async logs(tid, rid){ tdNeedAdmin(); return tdLoad().logs.filter(l => l.tournament_id === tid && (!rid || l.registration_id === rid)); },
+  async uploadAsset(file){ return shrinkImage(file, 1400); },
+  async saveTournament(obj){
+    if (!isLeader()) throw new Error('Chỉ Leader mới sửa được thông tin giải.');
+    const d = tdLoad();
+    if (obj.id){ const t = d.tournaments.find(x => x.id === obj.id); const was = t.status; Object.assign(t, obj); tdLog(d, t.id, null, 'tournament_updated', was !== t.status ? 'Trạng thái: ' + was + ' → ' + t.status : 'Chỉnh sửa thông tin giải'); }
+    else { if (d.tournaments.some(x => x.slug === obj.slug)) throw new Error('Slug đã tồn tại.'); const t = Object.assign({ id:tdId(), created_at:new Date().toISOString() }, obj); d.tournaments.push(t); tdLog(d, t.id, null, 'tournament_created', t.name); }
+    tdSave(d);
+  }
+};
+
+/* ============================================================
+   LỚP DỮ LIỆU — SUPABASE (mọi thao tác ghi đều qua hàm SQL ở máy chủ)
+   ============================================================ */
+const rpc = async (fn, args) => { const r = await sb.rpc(fn, args); if (r.error) throw r.error; return r.data; };
+const tapiSB = {
+  async list(){ return must(await sb.from('tournaments').select('*').order('created_at', { ascending:false })); },
+  async stats(tid){ return await rpc('tournament_stats', { p_tid:tid }); },
+  async teams(tid){ return await rpc('public_teams', { p_tid:tid }); },
+  async myRegs(){ return must(await sb.from('registrations').select('*').eq('owner_id', S.user.id).order('created_at', { ascending:false })); },
+  async save(tid, id, data, submit){ return await rpc('save_registration', { p_tid:tid, p_id:id, p_data:data, p_submit:submit }); },
+  async markTransferred(id, file){
+    let path = null;
+    if (file){ checkImage(file); const ext = ({ 'image/jpeg':'jpg', 'image/png':'png', 'image/webp':'webp' })[file.type]; path = `${S.user.id}/${id}-${Date.now()}.${ext}`;
+      const up = await sb.storage.from('payment-proofs').upload(path, file, { upsert:false, contentType:file.type }); if (up.error) throw up.error; }
+    return await rpc('mark_transferred', { p_id:id, p_path:path });
+  },
+  async cancel(id){ return await rpc('cancel_registration', { p_id:id }); },
+  async messages(rid){ return must(await sb.from('registration_messages').select('*').eq('registration_id', rid).order('created_at')); },
+  async postMessage(rid, body){ await rpc('post_message', { p_id:rid, p_body:body }); },
+  async proofUrl(path){ const r = await sb.storage.from('payment-proofs').createSignedUrl(path, 600); if (r.error) throw r.error; return r.data.signedUrl; },
+  async staffRegs(tid){ return must(await sb.from('registrations').select('*').eq('tournament_id', tid).neq('review_status', 'draft').order('submitted_at', { ascending:false })); },
+  async staffReview(id, status, note){ await rpc('staff_review', { p_id:id, p_status:status, p_note:note || '' }); },
+  async staffPayment(id, status, note){ await rpc('staff_payment', { p_id:id, p_status:status, p_note:note || '' }); },
+  async staffPoints(id, n){ await rpc('staff_points', { p_id:id, p_points:n }); },
+  async logs(tid, rid){ let q = sb.from('tournament_logs').select('*').eq('tournament_id', tid).order('created_at', { ascending:false }).limit(200); if (rid) q = q.eq('registration_id', rid); return must(await q); },
+  async uploadAsset(file){ checkImage(file); const path = `tournament/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${(file.name.split('.').pop() || 'jpg').toLowerCase()}`;
+    const up = await sb.storage.from('clan-assets').upload(path, file); if (up.error) throw up.error; return sb.storage.from('clan-assets').getPublicUrl(path).data.publicUrl; },
+  async saveTournament(obj){ if (obj.id){ const id = obj.id; delete obj.id; must(await sb.from('tournaments').update(obj).eq('id', id)); } else { delete obj.id; must(await sb.from('tournaments').insert(obj)); } }
+};
+const tapi = DEMO ? tapiDemo : tapiSB;
+
+/* ============================================================
+   TẢI DỮ LIỆU
+   ============================================================ */
+async function tourLoad(){
+  try {
+    TS.list = await tapi.list();
+    if (!TS.list.find(t => t.id === TS.tid)) TS.tid = (TS.list.find(t => t.status === 'open') || TS.list[0] || {}).id || null;
+    if (TS.tid) [TS.stats, TS.teams] = await Promise.all([tapi.stats(TS.tid), tapi.teams(TS.tid)]); else { TS.stats = { registered:0, approved:0 }; TS.teams = []; }
+    TS.myRegs = S.user ? await tapi.myRegs() : [];
+    TS.error = null;
+  } catch (e){ console.error(e); TS.error = errMsg(e); }
+}
+async function staffLoad(){
+  const t = curT(); if (!t || !isAdmin()) return;
+  try { [TS.staff.regs, TS.staff.logs] = await Promise.all([tapi.staffRegs(t.id), tapi.logs(t.id)]); } catch (e){ toast(errMsg(e), true); }
+}
+async function staffReload(openId){ await staffLoad(); await tourLoad(); render(); if (openId) staffDetail(openId); }
+
+/* ============================================================
+   GIAO DIỆN
+   ============================================================ */
+function viewTour(){
+  const t = curT(), subs = [['home', 'Trang giải'], ['register', 'Đăng ký'], ['mine', 'Hồ sơ của tôi'], ['rank', 'Bảng xếp hạng']];
+  if (isAdmin()) subs.push(['staff', 'Quản lý giải']);
+  let body = '';
+  if (TS.error) body = `<div class="hud p-5 mb-4"><div class="font-bold mb-1" style="color:var(--bad)">Không tải được dữ liệu giải đấu</div><div class="mono text-sm" style="color:var(--mut)">${esc(TS.error)}</div><div class="mt-2 text-sm" style="color:var(--mut)">Nếu đây là lần đầu: hãy chạy file <b>setup-tournament.sql</b> trong Supabase > SQL Editor rồi tải lại trang.</div></div>`;
+  else if (!t) body = `<div class="hud p-6 text-center"><div class="text-xl font-bold mb-2" style="color:var(--sand)">Chưa có giải đấu nào</div>${isLeader() ? `<button class="btn pri" onclick="tourForm()">+ Tạo giải đấu</button>` : `<div style="color:var(--mut)">Ban tổ chức sẽ sớm công bố giải mới.</div>`}</div>`;
+  else body = ({ home:subHome, register:subRegister, mine:subMine, rank:subRank, staff:subStaff })[TS.sub](t);
+  $('#view').innerHTML = `
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+    <div class="flex items-center gap-3"><div class="logo-mark">LAG</div>
+      <div><div class="mono text-xs" style="color:var(--orange)">// TOURNAMENT HQ</div><div class="text-2xl font-bold tracking-widest" style="color:var(--sand)">CLAN LAG</div></div></div>
+    <div class="flex gap-4 items-center">
+      <a class="toplink" onclick="tourGo('rank')">Bảng xếp hạng</a>
+      <a class="toplink" onclick="goSection('contact')">Liên hệ ban tổ chức</a>
+    </div>
+  </div>
+  <div class="flex flex-wrap items-center gap-2 mb-5">
+    ${subs.map(s => `<div class="chip ${TS.sub === s[0] ? 'on' : ''}" onclick="tourGo('${s[0]}')">${s[1]}</div>`).join('')}
+    ${TS.list.length > 1 ? `<select class="inp ml-auto" style="max-width:240px" onchange="tourSwitch(this.value)">${TS.list.map(x => `<option value="${x.id}" ${x.id === TS.tid ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>` : ''}
+  </div>
+  ${body}`;
+}
+async function tourGo(sub){
+  S.view = 'tour'; TS.sub = sub; TS.detailId = null; TS.done = null;
+  if (sub === 'staff'){ render(); await staffLoad(); render(); return; }
+  if (sub === 'mine' || sub === 'rank' || sub === 'register') await tourLoad();
+  render(); window.scrollTo({ top:0 });
+}
+async function tourSwitch(id){ TS.tid = id; TS.reg = null; TS.done = null; TS.detailId = null; await tourLoad(); if (TS.sub === 'staff') await staffLoad(); render(); }
+function goSection(id){
+  S.view = 'tour'; TS.sub = 'home'; TS.detailId = null; render();
+  setTimeout(() => { const el = document.getElementById('sec-' + id); if (el){ el.open = true; el.scrollIntoView({ behavior:'smooth', block:'start' }); } }, 30);
+}
+function needLogin(msg){
+  return `<div class="hud p-6 text-center max-w-xl mx-auto"><div class="mono text-xs mb-1" style="color:var(--orange)">// CẦN ĐĂNG NHẬP</div><div class="text-lg mb-4">${esc(msg)}</div><button class="btn pri" onclick="renderLogin()">Đăng nhập / Đăng ký</button></div>`;
+}
+
+/* ---------- Trang giải: banner + thông tin ---------- */
+function subHome(t){
+  const [stLabel, stCls] = tStatus(t), rs = regState(t);
+  const pct = Math.min(100, Math.round(TS.stats.registered / t.max_teams * 100));
+  const tile = (l, v) => `<div class="tile"><div class="lbl" style="margin:0">${l}</div><div class="font-bold text-lg leading-tight">${v}</div></div>`;
+  const sec = (id, title, text) => `<details class="acc hud" id="sec-${id}"><summary>${title}</summary><div class="acc-body whitespace-pre-line">${text ? esc(text) : '<span style="color:var(--mut)">Ban tổ chức chưa cập nhật nội dung này.</span>'}</div></details>`;
+  const faq = (t.faq || []).length ? t.faq.map(x => `<details class="faq"><summary>${esc(x.q)}</summary><div class="whitespace-pre-line" style="color:var(--mut)">${esc(x.a)}</div></details>`).join('') : '<span style="color:var(--mut)">Chưa có câu hỏi nào.</span>';
+  return `
+  <section class="hud hero" style="--banner:url('${esc(t.banner_url || 'banner.jpg')}')">
+    <div class="hero-in">
+      <div class="mono text-xs" style="color:var(--orange)">// TOURNAMENT BRIEFING</div>
+      <h1 class="hero-title">${esc(t.name)}</h1>
+      ${t.subtitle ? `<p class="text-lg" style="color:var(--text)">${esc(t.subtitle)}</p>` : ''}
+      <div class="mt-3">${tb({ x:[stLabel, stCls] }, 'x')}</div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 my-5">
+        ${tile('Mở đăng ký', fmtDT(t.reg_open_at))}
+        ${tile('Đóng đăng ký', fmtDT(t.reg_close_at))}
+        ${tile('Tổng giải thưởng', `<span style="color:var(--orange)">${esc(t.prize_total || 'Sẽ công bố')}</span>`)}
+        ${tile('Lệ phí', Object.keys(MODES).map(k => `${MODES[k].label}: ${money(feeOf(t, k))}`).join('<br>'))}
+        ${tile('Số đội tối đa', t.max_teams)}
+        ${tile('Đã đăng ký', `${TS.stats.registered}/${t.max_teams}<div class="bar mt-1"><i style="width:${pct}%"></i></div>`)}
+        ${tile('Thi đấu dự kiến', fmtDT(t.start_at))}
+        ${tile('Đội đã được duyệt', TS.stats.approved)}
+      </div>
+      <div class="flex flex-wrap gap-3">
+        <button class="btn" onclick="goSection('rules')">Xem điều lệ</button>
+        <button class="btn" onclick="goSection('prize')">Xem giải thưởng</button>
+        <button class="btn pri" style="font-size:1rem;padding:.6rem 1.4rem" ${rs.open ? '' : 'disabled title="' + esc(rs.reason) + '"'} onclick="tourGo('register')">Đăng ký ngay</button>
+      </div>
+      ${rs.open ? '' : `<div class="mt-3 text-sm" style="color:var(--warn)">${esc(rs.reason)}</div>`}
+    </div>
+  </section>
+  <div class="grid md:grid-cols-4 gap-3 my-5">
+    ${[['1', 'Đăng ký', 'Chọn thể thức và điền hồ sơ'], ['2', 'BTC duyệt', 'Ban tổ chức kiểm tra UID và thành viên'], ['3', 'Thanh toán', 'Chuyển lệ phí, gửi minh chứng'], ['4', 'Xác nhận', 'BTC xác nhận đã nhận phí và cho thi đấu']].map(s => `<div class="tile"><div class="mono" style="color:var(--orange)">BƯỚC ${s[0]}</div><div class="font-bold">${s[1]}</div><div class="text-sm" style="color:var(--mut)">${s[2]}</div></div>`).join('')}
+  </div>
+  <div class="grid gap-3">
+    ${sec('rules', 'Điều lệ giải đấu', t.rules)}
+    ${sec('format', 'Thể thức thi đấu', t.format_text)}
+    ${sec('prize', 'Cơ cấu giải thưởng', t.prize_structure)}
+    ${sec('schedule', 'Lịch thi đấu dự kiến', t.schedule)}
+    ${sec('members', 'Quy định về thành viên', t.member_rules)}
+    ${sec('refund', 'Chính sách hủy và hoàn phí', t.refund_policy)}
+    <details class="acc hud" id="sec-faq"><summary>Câu hỏi thường gặp</summary><div class="acc-body">${faq}</div></details>
+    ${sec('contact', 'Thông tin liên hệ ban tổ chức', t.contact)}
+  </div>
+  <div class="hud p-5 mt-5">
+    <h2 class="text-xl font-bold mb-3" style="color:var(--sand)">Danh sách đội đã được duyệt</h2>
+    ${TS.teams.length ? `<div class="grid sm:grid-cols-2 md:grid-cols-3 gap-2">${TS.teams.map(x => `<div class="tile flex items-center justify-between gap-2"><div><div class="font-bold">${esc(x.team_name)}</div><div class="text-xs mono" style="color:var(--mut)">${MODES[x.mode] ? MODES[x.mode].label : esc(x.mode)}</div></div>${tb(REV, x.review_status)}</div>`).join('')}</div>` : `<div style="color:var(--mut)">Chưa có đội nào được duyệt.</div>`}
+    <div class="text-xs mt-3" style="color:var(--mut)">Chỉ hiển thị tên đội, thể thức và trạng thái. Thông tin cá nhân và minh chứng thanh toán không được công khai.</div>
+  </div>`;
+}
+
+/* ---------- Bảng xếp hạng ---------- */
+function subRank(t){
+  return `<div class="hud p-5"><h2 class="text-xl font-bold mb-1" style="color:var(--sand)">Bảng xếp hạng · ${esc(t.name)}</h2>
+    <div class="text-sm mb-3" style="color:var(--mut)">Điểm do ban tổ chức cập nhật trong quá trình thi đấu.</div>
+    ${TS.teams.length ? `<div class="scroll-x"><table><thead><tr><th>#</th><th>Đội</th><th>Thể thức</th><th>Điểm</th></tr></thead><tbody>${TS.teams.map((x, i) => `<tr><td class="mono">${i + 1}</td><td><b>${esc(x.team_name)}</b></td><td>${MODES[x.mode] ? MODES[x.mode].label : esc(x.mode)}</td><td class="mono" style="color:var(--orange)">${x.points}</td></tr>`).join('')}</tbody></table></div>` : `<div style="color:var(--mut)">Chưa có đội nào được duyệt.</div>`}</div>`;
+}
+
+/* ---------- Đăng ký: wizard ---------- */
+const blankReg = tid => ({ id:null, tournament_id:tid, mode:null, team_name:'', captain_name:'', captain_ingame:'', captain_uid:'', contact:'', members:[], substitute:'', terms_accepted:false });
+const regFromRow = r => ({ id:r.id, tournament_id:r.tournament_id, mode:r.mode, team_name:r.team_name || '', captain_name:r.captain_name || '', captain_ingame:r.captain_ingame || '', captain_uid:r.captain_uid || '', contact:r.contact || '', members:(r.members || []).map(m => ({ ingame:m.ingame || '', uid:m.uid || '' })), substitute:r.substitute || '', terms_accepted:false });
+const stepsFor = mode => !mode ? ['mode'] : mode === 'solo' ? ['mode', 'info', 'confirm'] : ['mode', 'info', 'members', 'confirm'];
+const regPayload = () => cleanReg(TS.reg);
+
+function subRegister(t){
+  if (!S.user) return needLogin('Đăng nhập để đăng ký tham gia giải đấu.');
+  if (TS.done) return successHTML(t);
+  const mine = TS.myRegs.find(r => r.tournament_id === t.id && !DEAD.includes(r.review_status));
+  if (mine && mine.review_status !== 'draft' && !(TS.reg && TS.reg.id === mine.id)) return alreadyHTML(mine);
+  if (!TS.reg){
+    const rs = regState(t);
+    if (!rs.open) return `<div class="hud p-6 text-center max-w-xl mx-auto"><div class="text-xl font-bold mb-2" style="color:var(--bad)">Không thể đăng ký lúc này</div><div style="color:var(--mut)">${esc(rs.reason)}</div></div>`;
+    if (mine && mine.review_status === 'draft'){ TS.reg = regFromRow(mine); TS.step = TS.reg.mode ? 2 : 1; }
+    else { TS.reg = blankReg(t.id); TS.step = 1; }
+  }
+  return wizardHTML(t);
+}
+function alreadyHTML(r){
+  return `<div class="hud p-6 max-w-2xl mx-auto"><div class="mono text-xs mb-1" style="color:var(--orange)">// ĐÃ CÓ HỒ SƠ</div>
+    <div class="text-xl font-bold mb-2" style="color:var(--sand)">Bạn đã gửi hồ sơ cho giải này</div>
+    <div class="mb-3"><b>${esc(r.team_name)}</b> · <span class="mono">${esc(r.code || '')}</span></div>
+    <div class="flex flex-wrap gap-2 mb-4">${tb(REV, r.review_status)} ${tb(PAY, r.payment_status)}</div>
+    <div class="flex flex-wrap gap-2"><button class="btn pri" onclick="openReg('${r.id}')">Xem hồ sơ &amp; thanh toán</button>${r.review_status === 'need_info' ? `<button class="btn" onclick="editReg('${r.id}')">Sửa thông tin</button>` : ''}</div></div>`;
+}
+function successHTML(t){
+  const r = TS.done;
+  return `<div class="hud p-6 max-w-2xl mx-auto text-center"><div class="mono text-xs mb-1" style="color:var(--ok)">// GỬI HỒ SƠ THÀNH CÔNG</div>
+    <div class="text-2xl font-bold mb-2" style="color:var(--sand)">Đăng ký thành công!</div>
+    <div class="mb-1" style="color:var(--mut)">Mã đăng ký của bạn</div>
+    <div class="mono text-4xl font-bold mb-3" style="color:var(--orange);letter-spacing:.12em">${esc(r.code)}</div>
+    <div class="mb-4">${tb(REV, r.review_status)} <div class="text-sm mt-2" style="color:var(--mut)">Trạng thái: chờ ban tổ chức duyệt. Hãy lưu lại mã này để tra cứu.</div></div>
+    <div class="flex flex-wrap gap-2 justify-center"><button class="btn pri" onclick="openReg('${r.id}')">Tiếp tục thanh toán</button><button class="btn" onclick="tourGo('mine')">Hồ sơ của tôi</button></div></div>`;
+}
+function fld(k, label, ph){
+  const R = TS.reg, err = TS.errs[k];
+  return `<div class="mb-3"><label class="lbl">${label}</label><input id="r-${k}" class="inp ${err ? 'err' : ''}" value="${esc(R[k] || '')}" placeholder="${esc(ph || '')}" oninput="regSet('${k}',this.value)">${err ? `<div class="ferr" id="e-${k}">${esc(err)}</div>` : ''}</div>`;
+}
+function wizardHTML(t){
+  const R = TS.reg, steps = stepsFor(R.mode);
+  if (TS.step > steps.length) TS.step = steps.length;
+  const name = steps[TS.step - 1], solo = R.mode === 'solo', M = MODES[R.mode];
+  let body = '';
+  if (name === 'mode'){
+    body = `<div class="grid md:grid-cols-3 gap-3">${Object.keys(MODES).map(k => `<button type="button" class="mode ${R.mode === k ? 'on' : ''}" onclick="pickMode('${k}')"><div class="text-2xl font-bold tracking-widest" style="color:var(--sand)">${MODES[k].label}</div><div style="color:var(--mut)">${MODES[k].desc}</div><div class="mt-2 font-bold" style="color:var(--orange)">Lệ phí: ${money(feeOf(t, k))}</div></button>`).join('')}</div>
+      ${TS.errs.mode ? `<div class="ferr mt-2">${esc(TS.errs.mode)}</div>` : ''}`;
+  } else if (name === 'info'){
+    body = `<div class="grid md:grid-cols-2 gap-x-4">
+      ${fld('team_name', solo ? 'Biệt danh / tên hiển thị' : 'Tên đội', solo ? 'VD: LoneViper' : 'VD: Shadow Wolves')}
+      ${fld('captain_name', solo ? 'Họ tên người chơi' : 'Tên đội trưởng', 'Họ và tên')}
+      ${fld('captain_ingame', 'Tên trong game (Arena Breakout)', '')}
+      ${fld('captain_uid', 'UID Arena Breakout', 'Chỉ gồm chữ số')}
+      ${fld('contact', 'Liên hệ Discord hoặc Zalo', 'VD: abc#1234 hoặc 09xxxxxxxx')}
+      ${!solo && t.allow_substitute ? fld('substitute', 'Thành viên / đội dự bị (nếu có)', 'Không bắt buộc') : ''}
+    </div>`;
+  } else if (name === 'members'){
+    const rows = R.members.map((m, i) => `<div class="grid grid-cols-12 gap-2 items-start mb-2">
+        <div class="col-span-12 sm:col-span-5"><label class="lbl">Thành viên ${i + 2} · Tên trong game</label><input id="r-m${i}_ingame" class="inp ${TS.errs['m' + i + '_ingame'] ? 'err' : ''}" value="${esc(m.ingame)}" oninput="regMember(${i},'ingame',this.value)">${TS.errs['m' + i + '_ingame'] ? `<div class="ferr" id="e-m${i}_ingame">${esc(TS.errs['m' + i + '_ingame'])}</div>` : ''}</div>
+        <div class="col-span-8 sm:col-span-5"><label class="lbl">UID</label><input id="r-m${i}_uid" class="inp ${TS.errs['m' + i + '_uid'] ? 'err' : ''}" value="${esc(m.uid)}" oninput="regMember(${i},'uid',this.value)">${TS.errs['m' + i + '_uid'] ? `<div class="ferr" id="e-m${i}_uid">${esc(TS.errs['m' + i + '_uid'])}</div>` : ''}</div>
+        <div class="col-span-4 sm:col-span-2 pt-5"><button class="btn bad sm" ${R.members.length <= M.min - 1 ? 'disabled style="opacity:.4"' : ''} onclick="regDelMember(${i})">Xóa</button></div></div>`).join('');
+    body = `<div class="mb-3" style="color:var(--mut)">Thể thức <b>${M.label}</b>: ${M.desc}, đội trưởng đã tính là người thứ nhất. Cần thêm tối thiểu ${M.min - 1}, tối đa ${M.max - 1} thành viên.</div>${rows}
+      ${TS.errs.members ? `<div class="ferr mb-2" id="e-members">${esc(TS.errs.members)}</div>` : ''}
+      <button class="btn" ${R.members.length >= M.max - 1 ? 'disabled style="opacity:.4"' : ''} onclick="regAddMember()">+ Thêm thành viên</button>`;
+  } else {
+    const errs = validateReg(R, t, 'full'), ms = R.members;
+    const row = (l, v) => `<tr><td class="mono" style="color:var(--mut);width:40%">${l}</td><td><b>${esc(v || '—')}</b></td></tr>`;
+    body = `${errs.filter(e => e.f !== 'terms').length ? `<div class="hud p-4 mb-4" style="border-color:var(--bad)"><div class="font-bold mb-1" style="color:var(--bad)">Còn ${errs.filter(e => e.f !== 'terms').length} mục cần sửa</div><ul class="text-sm list-disc pl-5">${errs.filter(e => e.f !== 'terms').map(e => `<li>${esc(e.m)}</li>`).join('')}</ul></div>` : ''}
+      <table class="mb-4"><tbody>${row('Thể thức', M.label + ' · lệ phí ' + money(feeOf(t, R.mode)))}${row(solo ? 'Biệt danh' : 'Tên đội', R.team_name)}${row('Đội trưởng', R.captain_name)}${row('Tên trong game', R.captain_ingame)}${row('UID', R.captain_uid)}${row('Liên hệ', R.contact)}${ms.map((m, i) => row('Thành viên ' + (i + 2), m.ingame + ' · UID ' + m.uid)).join('')}${R.substitute ? row('Dự bị', R.substitute) : ''}</tbody></table>
+      <label class="flex gap-2 items-start mb-1"><input type="checkbox" class="mt-1" ${R.terms_accepted ? 'checked' : ''} onchange="regTerms(this.checked)"><span>Tôi đã kiểm tra lại thông tin và xác nhận đã đọc, đồng ý với <a class="toplink" style="text-decoration:underline" onclick="showRules()">điều lệ giải đấu</a>.</span></label>
+      ${TS.errs.terms ? `<div class="ferr" id="e-terms">${esc(TS.errs.terms)}</div>` : ''}`;
+  }
+  const last = !!R.mode && TS.step === steps.length;
+  return `<div class="hud p-5 max-w-3xl mx-auto">
+    <div class="flex flex-wrap gap-2 mb-4">${steps.map((s, i) => `<div class="stp ${i + 1 === TS.step ? 'on' : ''} ${i + 1 < TS.step ? 'done' : ''}">${i + 1}. ${STEP_T[s]}</div>`).join('')}</div>
+    <h2 class="text-xl font-bold mb-3" style="color:var(--sand)">${STEP_T[name]}${R.id ? ' <span class="badge mut">ĐANG SỬA HỒ SƠ</span>' : ''}</h2>
+    ${body}
+    <div class="flex flex-wrap gap-2 mt-6 pt-4" style="border-top:1px solid var(--line)">
+      ${TS.step > 1 ? `<button class="btn" onclick="regBack()">Quay lại</button>` : ''}
+      ${R.mode ? `<button class="btn" onclick="act(this, regSaveDraft)">Lưu bản nháp</button><button class="btn" onclick="regCheck()">Kiểm tra thông tin</button>` : ''}
+      <div class="ml-auto">${last ? `<button class="btn pri" onclick="act(this, regSubmit)">Gửi đăng ký</button>` : `<button class="btn pri" onclick="regNext()">Tiếp tục</button>`}</div>
+    </div></div>`;
+}
+function pickMode(k){
+  const R = TS.reg, M = MODES[k]; R.mode = k;
+  while (R.members.length < M.min - 1) R.members.push({ ingame:'', uid:'' });
+  while (R.members.length > M.max - 1) R.members.pop();
+  if (k === 'solo') R.substitute = '';
+  TS.errs = {}; render();
+}
+function dropErr(k){ if (TS.errs[k]){ delete TS.errs[k]; const e = document.getElementById('e-' + k); if (e) e.remove(); const i = document.getElementById('r-' + k); if (i) i.classList.remove('err'); } }
+function regSet(k, v){ TS.reg[k] = v; dropErr(k); }
+function regMember(i, k, v){ TS.reg.members[i][k] = v; dropErr('m' + i + '_' + k); dropErr('members'); }
+function regAddMember(){ const M = MODES[TS.reg.mode]; if (TS.reg.members.length >= M.max - 1) return toast('Đã đủ số thành viên tối đa của thể thức ' + M.label + '.', true); TS.reg.members.push({ ingame:'', uid:'' }); render(); }
+function regDelMember(i){ const M = MODES[TS.reg.mode]; if (TS.reg.members.length <= M.min - 1) return toast('Thể thức ' + M.label + ' cần tối thiểu ' + M.min + ' người chơi.', true); TS.reg.members.splice(i, 1); TS.errs = {}; render(); }
+function regTerms(v){ TS.reg.terms_accepted = v; dropErr('terms'); }
+function showRules(){ const t = curT(); openModal(`<h3 class="text-lg font-bold mb-3" style="color:var(--sand)">Điều lệ giải đấu</h3><div class="whitespace-pre-line mb-4 text-sm">${esc(t.rules || 'Ban tổ chức chưa cập nhật điều lệ.')}</div><button class="btn w-full" onclick="closeModal()">Đóng</button>`, true); }
+function setErrs(errs, jump){
+  TS.errs = {}; errs.forEach(e => { if (!TS.errs[e.f]) TS.errs[e.f] = e.m; });
+  if (jump && errs.length){ const idx = stepsFor(TS.reg.mode).indexOf(grp(errs[0].f)); if (idx >= 0) TS.step = idx + 1; }
+  render();
+}
+function regBack(){ TS.step = Math.max(1, TS.step - 1); TS.errs = {}; render(); }
+function regNext(){
+  const t = curT(), R = TS.reg, steps = stepsFor(R.mode), name = steps[TS.step - 1];
+  const errs = validateReg(R, t, 'full').filter(e => grp(e.f) === name);
+  if (errs.length){ setErrs(errs); return toast('Vui lòng kiểm tra lại các mục được đánh dấu đỏ.', true); }
+  TS.step = Math.min(steps.length, TS.step + 1); TS.errs = {}; render(); window.scrollTo({ top:0 });
+}
+function regCheck(){
+  const errs = validateReg(TS.reg, curT(), 'full');
+  if (!errs.length){ TS.errs = {}; render(); return toast('Thông tin hợp lệ ✓ Bạn có thể gửi đăng ký.'); }
+  setErrs(errs, true); toast('Còn ' + errs.length + ' mục cần sửa.', true);
+}
+async function regSaveDraft(){
+  const t = curT(), errs = validateReg(TS.reg, t, 'draft'); if (errs.length){ setErrs(errs); throw new Error(errs[0].m); }
+  const row = await tapi.save(t.id, TS.reg.id, regPayload(), false);
+  TS.reg.id = row.id; await tourLoad(); render(); toast('Đã lưu bản nháp. Bạn có thể quay lại hoàn thiện sau.');
+}
+async function regSubmit(){
+  const t = curT(), errs = validateReg(TS.reg, t, 'full');
+  if (errs.length){ setErrs(errs, true); throw new Error('Còn ' + errs.length + ' mục cần sửa trước khi gửi.'); }
+  if (!confirm('Gửi đăng ký đội "' + TS.reg.team_name.trim() + '"?\nSau khi gửi, bạn chỉ sửa được khi ban tổ chức yêu cầu bổ sung.')) return;
+  const row = await tapi.save(t.id, TS.reg.id, regPayload(), true);
+  TS.reg = null; TS.step = 1; TS.errs = {}; TS.done = row;
+  await tourLoad(); render(); window.scrollTo({ top:0 }); toast('Đã gửi hồ sơ thành công!');
+}
+
+/* ---------- Hồ sơ của tôi (tra cứu) + thanh toán ---------- */
+function subMine(){
+  if (!S.user) return needLogin('Đăng nhập để tra cứu hồ sơ đăng ký của bạn.');
+  if (TS.detailId) return regDetail();
+  const q = (TS.q || '').trim().toLowerCase();
+  const list = TS.myRegs.filter(r => !q || (r.code || '').toLowerCase().includes(q) || (r.team_name || '').toLowerCase().includes(q));
+  const legend = Object.keys(REV).map(k => tb(REV, k)).join(' ') + ' ' + Object.keys(PAY).map(k => tb(PAY, k)).join(' ');
+  return `<div class="hud p-5">
+    <div class="flex flex-wrap items-center gap-3 mb-4"><h2 class="text-xl font-bold" style="color:var(--sand)">Hồ sơ của tôi</h2>
+      <input class="inp ml-auto" style="max-width:280px" placeholder="Tìm theo mã đăng ký hoặc tên đội" value="${esc(TS.q)}" oninput="TS.q=this.value;renderMineList()"></div>
+    <div id="mine-list">${mineListHTML(list)}</div>
+    <div class="text-xs mt-4" style="color:var(--mut)">Trạng thái hồ sơ &amp; thanh toán được quản lý riêng:<div class="mt-1 flex flex-wrap gap-1">${legend}</div></div></div>`;
+}
+function mineListHTML(list){
+  if (!list.length) return `<div style="color:var(--mut)">Chưa có hồ sơ nào.${regState(curT()).open ? ' <a class="toplink" style="text-decoration:underline" onclick="tourGo(\'register\')">Đăng ký ngay</a>' : ''}</div>`;
+  return list.map(r => { const t = TS.list.find(x => x.id === r.tournament_id) || {};
+    return `<div class="tile mb-2 flex flex-wrap items-center gap-3 justify-between"><div><div class="font-bold">${esc(r.team_name || '(chưa đặt tên)')} <span class="mono text-sm" style="color:var(--orange)">${esc(r.code || '')}</span></div><div class="text-xs" style="color:var(--mut)">${esc(t.name || '')} · ${MODES[r.mode] ? MODES[r.mode].label : esc(r.mode)}</div></div>
+      <div class="flex flex-wrap gap-1 items-center">${tb(REV, r.review_status)} ${r.review_status === 'draft' ? '' : tb(PAY, r.payment_status)}</div>
+      <button class="btn sm" onclick="openReg('${r.id}')">Xem hồ sơ</button></div>`; }).join('');
+}
+function renderMineList(){
+  const q = (TS.q || '').trim().toLowerCase();
+  $('#mine-list').innerHTML = mineListHTML(TS.myRegs.filter(r => !q || (r.code || '').toLowerCase().includes(q) || (r.team_name || '').toLowerCase().includes(q)));
+}
+async function openReg(id){
+  S.view = 'tour'; TS.sub = 'mine'; TS.detailId = id; TS.done = null;
+  try { await tourLoad(); TS.msgs = await tapi.messages(id); } catch (e){ toast(errMsg(e), true); }
+  render(); window.scrollTo({ top:0 });
+}
+function editReg(id){
+  const r = TS.myRegs.find(x => x.id === id); if (!r) return;
+  TS.reg = regFromRow(r); TS.step = 2; TS.errs = {}; TS.done = null; TS.detailId = null; TS.sub = 'register'; S.view = 'tour'; render(); window.scrollTo({ top:0 });
+}
+function qrFor(t, r){
+  if (t.bank_bin && t.bank_account) return `https://img.vietqr.io/image/${encodeURIComponent(t.bank_bin)}-${encodeURIComponent(t.bank_account)}-compact2.png?amount=${feeOf(t, r.mode)}&addInfo=${encodeURIComponent(r.code || '')}&accountName=${encodeURIComponent(t.account_holder || '')}`;
+  return t.qr_image_url || null;
+}
+function payPanel(t, r){
+  const fee = feeOf(t, r.mode);
+  if (r.review_status === 'draft') return `<div class="tile mb-4" style="color:var(--mut)">Hãy hoàn tất và gửi hồ sơ để nhận mã đăng ký và thanh toán lệ phí.</div>`;
+  if (DEAD.includes(r.review_status)) return '';
+  if (fee === 0) return `<div class="tile mb-4">Giải này miễn lệ phí cho thể thức ${MODES[r.mode].label}. Không cần thanh toán.</div>`;
+  if (r.payment_status === 'paid') return `<div class="tile mb-4" style="border-color:var(--ok)"><b style="color:var(--ok)">Ban tổ chức đã xác nhận nhận lệ phí ${money(fee)}.</b> ${r.paid_at ? '<span class="text-sm" style="color:var(--mut)">(' + fmtDT(r.paid_at) + ')</span>' : ''}</div>`;
+  const qr = qrFor(t, r);
+  const line = (l, v, copy) => v ? `<div class="flex items-center justify-between gap-2 py-1"><div><div class="lbl" style="margin:0">${l}</div><div class="mono font-bold">${esc(v)}</div></div>${copy ? `<button class="btn sm" data-copy="${esc(v)}" onclick="copyText(this)">Sao chép</button>` : ''}</div>` : '';
+  return `<div class="hud p-4 mb-4" style="border-color:var(--orange)">
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-2"><h3 class="font-bold" style="color:var(--orange)">Thanh toán lệ phí</h3>${tb(PAY, r.payment_status)}</div>
+    <div class="grid md:grid-cols-3 gap-4">
+      <div class="md:col-span-2">
+        ${line('Số tiền', money(fee), false)}${line('Người nhận', t.account_holder)}${line('Ngân hàng', t.bank_name)}${line('Số tài khoản', t.bank_account, true)}${line('Nội dung chuyển khoản (bắt buộc ghi đúng)', r.code, true)}
+        <div class="text-xs mt-2" style="color:var(--mut)">Hệ thống chỉ đánh dấu "Đã thanh toán" sau khi ban tổ chức kiểm tra giao dịch thực tế. Bạn không thể tự xác nhận.</div>
+      </div>
+      <div class="text-center">${qr ? `<img src="${esc(qr)}" alt="QR thanh toán" class="bg-white p-2 mx-auto" style="max-width:200px;width:100%"><div class="flex gap-2 justify-center mt-2"><button class="btn sm" onclick="showQr('${r.id}')">Phóng to</button><a class="btn sm" href="${esc(qr)}" download="qr-thanh-toan.png" target="_blank" rel="noopener">Tải QR</a></div>` : `<div class="tile text-sm" style="color:var(--mut)">Ban tổ chức chưa tải mã QR. Vui lòng chuyển khoản theo thông tin bên cạnh.</div>`}</div>
+    </div>
+    <hr class="my-3" style="border-color:var(--line)">
+    <label class="lbl">Ảnh minh chứng chuyển khoản (JPG/PNG/WEBP, tối đa 5MB)</label>
+    <input type="file" id="proof-file" accept="image/jpeg,image/png,image/webp" class="inp mb-3">
+    <div class="flex flex-wrap gap-2">
+      <button class="btn pri" onclick="act(this, () => payNow('${r.id}', false))">Tôi đã chuyển khoản</button>
+      <button class="btn" onclick="act(this, () => payNow('${r.id}', true))">Gửi minh chứng thanh toán</button>
+      <button class="btn" onclick="act(this, () => refreshReg())">Kiểm tra trạng thái</button>
+    </div>
+    ${r.payment_status === 'proof_sent' ? `<div class="mt-3 text-sm" style="color:var(--warn)">Đã ghi nhận báo chuyển khoản${r.proof_at ? ' lúc ' + fmtDT(r.proof_at) : ''}${r.proof_path ? ' (có kèm minh chứng)' : ''}. Đang chờ ban tổ chức xác nhận.</div>` : ''}
+  </div>`;
+}
+async function payNow(id, needFile){
+  const f = ($('#proof-file') || {}).files ? $('#proof-file').files[0] : null;
+  if (needFile && !f) throw new Error('Hãy chọn ảnh minh chứng trước.');
+  if (f) checkImage(f);
+  if (!needFile && !confirm('Xác nhận bạn đã chuyển khoản đúng số tiền và nội dung?\nBan tổ chức sẽ kiểm tra giao dịch thực tế trước khi xác nhận.')) return;
+  await tapi.markTransferred(id, f); await tourLoad(); TS.msgs = await tapi.messages(id); render();
+  toast(f ? 'Đã gửi minh chứng. Chờ ban tổ chức xác nhận.' : 'Đã ghi nhận. Chờ ban tổ chức xác nhận.');
+}
+async function refreshReg(){
+  const id = TS.detailId; const before = (TS.myRegs.find(x => x.id === id) || {});
+  await tourLoad(); TS.msgs = await tapi.messages(id); render();
+  const r = TS.myRegs.find(x => x.id === id) || {};
+  toast('Hồ sơ: ' + (REV[r.review_status] || [''])[0] + ' · Thanh toán: ' + (PAY[r.payment_status] || [''])[0] + (before.review_status !== r.review_status || before.payment_status !== r.payment_status ? ' (có thay đổi mới)' : ''));
+}
+function showQr(id){
+  const r = TS.myRegs.find(x => x.id === id), t = TS.list.find(x => x.id === r.tournament_id), qr = qrFor(t, r);
+  openModal(`<img src="${esc(qr)}" alt="QR" class="bg-white p-3 w-full mb-3"><button class="btn w-full" onclick="closeModal()">Đóng</button>`);
+}
+function msgsHTML(msgs){
+  if (!msgs.length) return `<div class="text-sm" style="color:var(--mut)">Chưa có tin nhắn nào.</div>`;
+  return msgs.map(m => `<div class="mb-2 p-2" style="border-left:3px solid ${m.sender === 'staff' ? 'var(--orange)' : 'var(--sand)'};background:rgba(10,10,9,.5)"><div class="mono text-xs" style="color:var(--mut)">${m.sender === 'staff' ? 'BAN TỔ CHỨC' : 'NGƯỜI CHƠI'} · ${fmtDT(m.created_at)}</div><div class="whitespace-pre-line">${esc(m.body)}</div></div>`).join('');
+}
+function regDetail(){
+  const r = TS.myRegs.find(x => x.id === TS.detailId);
+  if (!r){ TS.detailId = null; return subMine(); }
+  const t = TS.list.find(x => x.id === r.tournament_id) || {}, M = MODES[r.mode] || { label:r.mode };
+  const canEdit = ['draft', 'need_info'].includes(r.review_status) && (r.review_status === 'draft' ? windowState(t).open : ['open', 'closed'].includes(t.status));
+  const canCancel = !DEAD.includes(r.review_status) && !['ongoing', 'finished'].includes(t.status);
+  const row = (l, v) => `<tr><td class="mono" style="color:var(--mut);width:38%">${l}</td><td><b>${esc(v || '—')}</b></td></tr>`;
+  return `<div class="max-w-4xl mx-auto">
+    <button class="btn sm mb-3" onclick="TS.detailId=null;render()">← Danh sách hồ sơ</button>
+    <div class="hud p-5 mb-4">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-2"><div><div class="text-2xl font-bold" style="color:var(--sand)">${esc(r.team_name || '(chưa đặt tên)')}</div><div class="mono" style="color:var(--orange)">${esc(r.code || 'Chưa có mã (bản nháp)')}</div></div>
+        <div class="flex flex-wrap gap-1">${tb(REV, r.review_status)} ${r.review_status === 'draft' ? '' : tb(PAY, r.payment_status)}</div></div>
+      ${r.staff_note && ['need_info', 'rejected'].includes(r.review_status) ? `<div class="p-3 mb-3" style="border:1px solid ${r.review_status === 'rejected' ? 'var(--bad)' : 'var(--warn)'}"><div class="mono text-xs" style="color:var(--mut)">THÔNG BÁO TỪ BAN TỔ CHỨC</div><div class="whitespace-pre-line">${esc(r.staff_note)}</div></div>` : ''}
+      <div class="flex flex-wrap gap-2">
+        <button class="btn sm" onclick="act(this, () => refreshReg())">Kiểm tra trạng thái</button>
+        ${canEdit ? `<button class="btn sm" onclick="editReg('${r.id}')">Sửa thông tin</button>` : ''}
+        ${canCancel ? `<button class="btn sm bad" onclick="act(this, () => cancelReg('${r.id}'))">Hủy đăng ký</button>` : ''}
+      </div>
+    </div>
+    ${payPanel(t, r)}
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="hud p-5"><h3 class="font-bold mb-2" style="color:var(--sand)">Thông tin đội</h3>
+        <table><tbody>${row('Giải', t.name)}${row('Thể thức', M.label)}${row('Đội trưởng', r.captain_name)}${row('Tên trong game', r.captain_ingame)}${row('UID', r.captain_uid)}${row('Liên hệ', r.contact)}${(r.members || []).map((m, i) => row('Thành viên ' + (i + 2), m.ingame + ' · UID ' + m.uid)).join('')}${r.substitute ? row('Dự bị', r.substitute) : ''}${row('Gửi lúc', fmtDT(r.submitted_at))}</tbody></table></div>
+      <div class="hud p-5"><h3 class="font-bold mb-2" style="color:var(--sand)">Thông báo &amp; hỗ trợ</h3>
+        <div class="mb-3" style="max-height:260px;overflow:auto">${msgsHTML(TS.msgs)}</div>
+        ${r.review_status === 'draft' ? '' : `<button class="btn" onclick="act(this, () => supportMsg('${r.id}'))">Yêu cầu hỗ trợ</button>`}</div>
+    </div></div>`;
+}
+async function cancelReg(id){
+  const r = TS.myRegs.find(x => x.id === id);
+  if (!confirm('Hủy đăng ký đội "' + r.team_name + '"?' + (r.payment_status === 'paid' ? '\nBạn đã thanh toán: việc hoàn phí do ban tổ chức xử lý theo chính sách hoàn phí của giải.' : '') + '\nThao tác này không thể hoàn tác.')) return;
+  await tapi.cancel(id); await tourLoad(); render(); toast('Đã hủy đăng ký.');
+}
+async function supportMsg(id){
+  const body = await askText('Yêu cầu hỗ trợ', 'Nội dung gửi ban tổ chức', { max:1000, ok:'Gửi' }); if (body === null) return;
+  await tapi.postMessage(id, body); TS.msgs = await tapi.messages(id); render(); toast('Đã gửi tin nhắn cho ban tổ chức.');
+}
+
+/* ---------- Quản lý giải (ban tổ chức) ---------- */
+function sMatch(r){
+  const f = TS.staff.filter, q = TS.staff.q.trim().toLowerCase();
+  if (f === 'proof'){ if (!(r.payment_status === 'proof_sent' && ACTIVE.includes(r.review_status))) return false; }
+  else if (f !== 'all' && r.review_status !== f) return false;
+  if (q){ const hay = [r.code, r.team_name, r.captain_name, r.captain_ingame, r.captain_uid, r.contact, ...(r.members || []).flatMap(m => [m.ingame, m.uid])].join(' ').toLowerCase(); if (!hay.includes(q)) return false; }
+  return true;
+}
+function sTableHTML(){
+  const rows = TS.staff.regs.filter(sMatch);
+  if (!rows.length) return `<tr><td colspan="7" style="color:var(--mut)">Không có hồ sơ phù hợp.</td></tr>`;
+  return rows.map(r => `<tr><td class="mono">${esc(r.code || '')}</td><td><b>${esc(r.team_name)}</b></td><td>${MODES[r.mode] ? MODES[r.mode].label : esc(r.mode)}</td><td>${tb(REV, r.review_status)}</td><td>${tb(PAY, r.payment_status)}</td><td class="mono text-sm" style="color:var(--mut)">${fmtDT(r.submitted_at)}</td><td><button class="btn sm" onclick="staffDetail('${r.id}')">Chi tiết</button></td></tr>`).join('');
+}
+function sRender(){ const el = $('#s-table'); if (el) el.innerHTML = sTableHTML(); }
+function sFilter(v){ TS.staff.filter = v; sRender(); }
+function sSearch(v){ TS.staff.q = v; sRender(); }
+function toggleLogs(){ TS.staff.showLogs = !TS.staff.showLogs; render(); }
+function subStaff(t){
+  if (!isAdmin()) return `<div class="hud p-6 text-center">Chỉ ban tổ chức (Leader/Captain) mới vào được khu vực này.</div>`;
+  const R = TS.staff.regs, c = f => R.filter(f).length;
+  const stat = (l, v, col) => `<div class="hud p-4"><div class="lbl">${l}</div><div class="stat" style="${col ? 'color:var(--' + col + ')' : ''}">${v}</div></div>`;
+  const leader = isLeader();
+  return `
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+    ${stat('Tổng hồ sơ', R.length)}${stat('Chờ duyệt', c(r => r.review_status === 'pending'), 'warn')}${stat('Cần bổ sung', c(r => r.review_status === 'need_info'), 'warn')}${stat('Giao dịch chờ xác nhận', c(r => r.payment_status === 'proof_sent' && ACTIVE.includes(r.review_status)), 'orange')}${stat('Đã hoàn tất', c(r => r.review_status === 'confirmed'), 'ok')}
+  </div>
+  <div class="hud p-4 mb-4"><div class="flex flex-wrap items-center gap-2">
+    <b style="color:var(--sand)">${esc(t.name)}</b> ${tb({ x:tStatus(t) }, 'x')}
+    <div class="ml-auto flex flex-wrap gap-2">
+      ${leader ? (t.status === 'open' ? `<button class="btn sm bad" onclick="act(this, () => setTStatus('${t.id}','closed'))">Khóa đăng ký</button>` : ['closed', 'draft'].includes(t.status) ? `<button class="btn sm ok" onclick="act(this, () => setTStatus('${t.id}','open'))">Mở đăng ký</button>` : '') : ''}
+      ${leader ? `<button class="btn sm" onclick="tourForm('${t.id}')">Sửa thông tin giải</button><button class="btn sm" onclick="tourForm()">+ Giải mới</button>` : ''}
+      <button class="btn sm" onclick="exportCsv()">Xuất CSV</button>
+      <button class="btn sm" onclick="toggleLogs()">${TS.staff.showLogs ? 'Ẩn' : 'Xem'} lịch sử thao tác</button>
+    </div></div>
+    ${leader ? '' : `<div class="text-xs mt-2" style="color:var(--mut)">Captain: duyệt hồ sơ, xác nhận lệ phí, nhắn người chơi. Mở/khóa đăng ký và sửa thông tin giải do Leader thực hiện.</div>`}
+  </div>
+  <div class="hud p-5">
+    <div class="flex flex-wrap gap-2 mb-3">
+      <select class="inp" style="max-width:240px" onchange="sFilter(this.value)">${[['all', 'Tất cả hồ sơ'], ['pending', 'Chờ duyệt'], ['need_info', 'Cần bổ sung'], ['proof', 'Chờ xác nhận thanh toán'], ['approved', 'Đã duyệt'], ['confirmed', 'Đã xác nhận tham gia'], ['rejected', 'Bị từ chối'], ['cancelled', 'Đã hủy']].map(o => `<option value="${o[0]}" ${TS.staff.filter === o[0] ? 'selected' : ''}>${o[1]}</option>`).join('')}</select>
+      <input class="inp" style="max-width:300px" placeholder="Tìm mã, tên đội, UID, liên hệ…" value="${esc(TS.staff.q)}" oninput="sSearch(this.value)"></div>
+    <div class="scroll-x"><table><thead><tr><th>Mã</th><th>Đội</th><th>Thể thức</th><th>Hồ sơ</th><th>Thanh toán</th><th>Gửi lúc</th><th></th></tr></thead><tbody id="s-table">${sTableHTML()}</tbody></table></div>
+  </div>
+  ${TS.staff.showLogs ? `<div class="hud p-5 mt-4"><h3 class="font-bold mb-2" style="color:var(--sand)">Lịch sử thao tác (200 gần nhất)</h3>${logsHTML(TS.staff.logs, true)}</div>` : ''}`;
+}
+function logsHTML(logs, showReg){
+  if (!logs.length) return `<div class="text-sm" style="color:var(--mut)">Chưa có thao tác nào.</div>`;
+  return `<div class="scroll-x" style="max-height:320px;overflow:auto"><table><tbody>${logs.map(l => `<tr><td class="mono text-xs" style="color:var(--mut);white-space:nowrap">${fmtDT(l.created_at)}</td><td>${esc(l.actor_name || 'Hệ thống')}</td><td class="mono text-xs">${esc(l.action)}</td><td class="text-sm">${esc(l.detail || '')}${showReg && l.registration_id ? ' <span class="mono text-xs" style="color:var(--mut)">(' + esc((TS.staff.regs.find(r => r.id === l.registration_id) || {}).code || '') + ')</span>' : ''}</td></tr>`).join('')}</tbody></table></div>`;
+}
+async function staffDetail(id){
+  const r = TS.staff.regs.find(x => x.id === id); if (!r) return;
+  openModal('<div class="mono">Đang tải hồ sơ…</div>', true);
+  try { const [msgs, logs] = await Promise.all([tapi.messages(id), tapi.logs(r.tournament_id, id)]); openModal(staffDetailHTML(r, msgs, logs), true); }
+  catch (e){ closeModal(); toast(errMsg(e), true); }
+}
+function staffDetailHTML(r, msgs, logs){
+  const t = TS.list.find(x => x.id === r.tournament_id) || {}, fee = feeOf(t, r.mode), dead = DEAD.includes(r.review_status);
+  const row = (l, v) => `<tr><td class="mono" style="color:var(--mut);width:38%">${l}</td><td><b>${esc(v || '—')}</b></td></tr>`;
+  const B = (label, cls, js, show) => show ? `<button class="btn sm ${cls}" onclick="act(this, () => ${js})">${label}</button>` : '';
+  const canConfirm = r.review_status === 'approved' && (r.payment_status === 'paid' || fee === 0);
+  return `<div class="flex flex-wrap items-center justify-between gap-2 mb-3"><div><div class="text-xl font-bold" style="color:var(--sand)">${esc(r.team_name)}</div><div class="mono" style="color:var(--orange)">${esc(r.code || '')}</div></div><div class="flex gap-1 flex-wrap">${tb(REV, r.review_status)} ${tb(PAY, r.payment_status)}</div></div>
+    <div class="grid md:grid-cols-2 gap-4">
+      <div><table><tbody>${row('Thể thức', (MODES[r.mode] || {}).label)}${row('Lệ phí', money(fee))}${row('Đội trưởng', r.captain_name)}${row('Tên trong game', r.captain_ingame)}${row('UID', r.captain_uid)}${row('Liên hệ', r.contact)}${(r.members || []).map((m, i) => row('Thành viên ' + (i + 2), m.ingame + ' · UID ' + m.uid)).join('')}${r.substitute ? row('Dự bị', r.substitute) : ''}${row('Gửi lúc', fmtDT(r.submitted_at))}${row('Báo chuyển khoản', fmtDT(r.proof_at))}${row('Xác nhận phí lúc', fmtDT(r.paid_at))}</tbody></table>
+        <div class="mt-3 flex flex-wrap gap-2 items-center">${r.proof_path ? `<button class="btn sm" onclick="sProof('${r.id}')">Xem minh chứng</button>` : '<span class="text-sm" style="color:var(--mut)">Chưa có ảnh minh chứng</span>'}</div>
+        <div class="mt-3 flex items-center gap-2"><label class="lbl" style="margin:0">Điểm</label><input id="s-points" type="number" min="0" class="inp" style="max-width:110px" value="${r.points}"><button class="btn sm" onclick="act(this, () => sPoints('${r.id}'))">Lưu điểm</button></div>
+      </div>
+      <div><h3 class="font-bold mb-2" style="color:var(--sand)">Hồ sơ</h3>
+        <div class="flex flex-wrap gap-2 mb-4">
+          ${B('✓ Duyệt', 'ok', `sReview('${r.id}','approved')`, !dead && ['pending', 'need_info'].includes(r.review_status))}
+          ${B('Yêu cầu chỉnh sửa', '', `sReview('${r.id}','need_info')`, !dead && ['pending', 'approved'].includes(r.review_status))}
+          ${B('Từ chối', 'bad', `sReview('${r.id}','rejected')`, !dead)}
+          ${B('Xác nhận tham gia', 'ok', `sReview('${r.id}','confirmed')`, canConfirm)}
+        </div>
+        <h3 class="font-bold mb-2" style="color:var(--sand)">Thanh toán (${money(fee)})</h3>
+        <div class="flex flex-wrap gap-2 mb-4">
+          ${B('✓ Xác nhận đã nhận lệ phí', 'ok', `sPay('${r.id}','paid')`, r.payment_status !== 'paid' && fee > 0)}
+          ${B('Yêu cầu bổ sung minh chứng', '', `sPay('${r.id}','unpaid')`, r.payment_status !== 'unpaid')}
+        </div>
+        <h3 class="font-bold mb-2" style="color:var(--sand)">Tin nhắn</h3>
+        <div class="mb-2" style="max-height:180px;overflow:auto">${msgsHTML(msgs)}</div>
+        <button class="btn sm" onclick="act(this, () => sMsg('${r.id}'))">Nhắn người chơi</button>
+      </div></div>
+    <h3 class="font-bold mt-4 mb-2" style="color:var(--sand)">Lịch sử hồ sơ</h3>${logsHTML(logs, false)}
+    <button class="btn w-full mt-4" onclick="closeModal()">Đóng</button>`;
+}
+const REVIEW_ASK = { need_info:['Yêu cầu chỉnh sửa hồ sơ', 'Nội dung cần người chơi sửa hoặc bổ sung'], rejected:['Từ chối hồ sơ', 'Lý do từ chối (người chơi sẽ thấy)'] };
+async function sReview(id, status){
+  let note = '';
+  if (REVIEW_ASK[status]){ note = await askText(REVIEW_ASK[status][0], REVIEW_ASK[status][1], { ok:'Xác nhận' }); if (note === null) return; }
+  else if (!confirm(status === 'approved' ? 'Duyệt hồ sơ này?' : 'Xác nhận đội này tham gia giải?')) return;
+  await tapi.staffReview(id, status, note); toast('Đã cập nhật hồ sơ'); await staffReload(id);
+}
+async function sPay(id, status){
+  let note = '';
+  if (status === 'paid'){ if (!confirm('Xác nhận ĐÃ NHẬN ĐỦ lệ phí cho hồ sơ này?\nHãy đối chiếu giao dịch thực tế trong tài khoản ngân hàng trước khi xác nhận.')) return; }
+  else { note = await askText('Yêu cầu bổ sung minh chứng', 'Nội dung gửi người chơi', { ok:'Gửi yêu cầu' }); if (note === null) return; }
+  await tapi.staffPayment(id, status, note); toast('Đã cập nhật thanh toán'); await staffReload(id);
+}
+async function sMsg(id){
+  const body = await askText('Nhắn người chơi', 'Nội dung', { max:1000 }); if (body === null) return;
+  await tapi.postMessage(id, body); toast('Đã gửi tin nhắn'); await staffReload(id);
+}
+async function sPoints(id){
+  const n = parseInt($('#s-points').value, 10); await tapi.staffPoints(id, n); toast('Đã lưu điểm'); await staffReload(id);
+}
+async function sProof(id){
+  const r = TS.staff.regs.find(x => x.id === id);
+  try { const url = await tapi.proofUrl(r.proof_path); openModal(`<h3 class="font-bold mb-2" style="color:var(--sand)">Minh chứng · ${esc(r.team_name)}</h3><img src="${esc(url)}" alt="minh chứng" class="w-full mb-3"><button class="btn w-full" onclick="staffDetail('${id}')">← Quay lại hồ sơ</button>`, true); }
+  catch (e){ toast(errMsg(e), true); }
+}
+async function setTStatus(id, status){
+  if (!confirm(status === 'open' ? 'Mở đăng ký cho giải này?' : 'Khóa đăng ký? Người chơi sẽ không đăng ký mới được nữa.')) return;
+  await tapi.saveTournament({ id, status }); toast(status === 'open' ? 'Đã mở đăng ký' : 'Đã khóa đăng ký'); await staffReload();
+}
+function exportCsv(){
+  const t = curT(), R = TS.staff.regs; if (!R.length) return toast('Chưa có hồ sơ để xuất.', true);
+  const cell = v => { let s = String(v ?? ''); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return '"' + s.replace(/"/g, '""') + '"'; };
+  const head = ['Mã', 'Đội', 'Thể thức', 'Trạng thái hồ sơ', 'Thanh toán', 'Đội trưởng', 'Tên trong game', 'UID', 'Liên hệ', 'Thành viên', 'Dự bị', 'Điểm', 'Gửi lúc', 'Xác nhận phí lúc'];
+  const lines = [head, ...R.map(r => [r.code, r.team_name, (MODES[r.mode] || {}).label, (REV[r.review_status] || [''])[0], (PAY[r.payment_status] || [''])[0], r.captain_name, r.captain_ingame, r.captain_uid, r.contact, (r.members || []).map(m => m.ingame + ':' + m.uid).join('; '), r.substitute, r.points, r.submitted_at, r.paid_at])].map(a => a.map(cell).join(',')).join('\r\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + lines], { type:'text/csv;charset=utf-8' })); a.download = `${t.slug}-danh-sach-${new Date().toISOString().slice(0, 10)}.csv`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+  toast('Đã xuất ' + R.length + ' hồ sơ.');
+}
+
+/* ---------- Form tạo / sửa giải (Leader) ---------- */
+function tourForm(id){
+  const t = id ? TS.list.find(x => x.id === id) : null, v = k => esc(t ? (t[k] ?? '') : ''), sel = t ? t.status : 'draft';
+  const inp = (k, label, type, extra) => `<div class="mb-3"><label class="lbl">${label}</label><input id="tf-${k}" type="${type || 'text'}" class="inp" value="${v(k)}" ${extra || ''}></div>`;
+  const dt = (k, label) => `<div class="mb-3"><label class="lbl">${label}</label><input id="tf-${k}" type="datetime-local" class="inp" value="${toLocalInput(t && t[k])}"></div>`;
+  const ta = (k, label, rows) => `<div class="mb-3"><label class="lbl">${label}</label><textarea id="tf-${k}" rows="${rows || 4}" class="inp">${v(k)}</textarea></div>`;
+  openModal(`<h3 class="text-lg font-bold mb-4" style="color:var(--sand)">${t ? 'Sửa thông tin giải' : 'Tạo giải đấu mới'}</h3>
+    <div class="grid md:grid-cols-2 gap-x-4">
+      ${inp('name', 'Tên giải')}${t ? '' : inp('slug', 'Slug (a-z, 0-9, dấu gạch ngang)', 'text', 'placeholder="lag-open-s2"')}
+      <div class="mb-3 md:col-span-2"><label class="lbl">Phụ đề</label><input id="tf-subtitle" class="inp" value="${v('subtitle')}"></div>
+      <div class="mb-3"><label class="lbl">Trạng thái</label><select id="tf-status" class="inp">${[['draft', 'Nháp (chưa công khai)'], ['open', 'Mở đăng ký'], ['closed', 'Đóng đăng ký'], ['ongoing', 'Đang thi đấu'], ['finished', 'Đã kết thúc']].map(o => `<option value="${o[0]}" ${sel === o[0] ? 'selected' : ''}>${o[1]}</option>`).join('')}</select></div>
+      ${inp('max_teams', 'Số đội tối đa', 'number', 'min="1"')}${dt('reg_open_at', 'Mở đăng ký lúc')}${dt('reg_close_at', 'Đóng đăng ký lúc')}${dt('start_at', 'Bắt đầu thi đấu')}${inp('prize_total', 'Tổng giải thưởng (chữ)')}
+      ${inp('fee_solo', 'Lệ phí Solo (đ)', 'number', 'min="0"')}${inp('fee_duo', 'Lệ phí Duo (đ)', 'number', 'min="0"')}${inp('fee_squad', 'Lệ phí Squad (đ)', 'number', 'min="0"')}
+      <label class="flex items-center gap-2 mb-3 pt-5"><input type="checkbox" id="tf-allow_substitute" ${!t || t.allow_substitute ? 'checked' : ''}> Cho phép thành viên dự bị</label>
+    </div>
+    <h4 class="font-bold mt-2 mb-2" style="color:var(--sand)">Thanh toán</h4>
+    <div class="grid md:grid-cols-2 gap-x-4">${inp('bank_name', 'Ngân hàng')}${inp('bank_account', 'Số tài khoản')}${inp('account_holder', 'Tên người nhận')}${inp('bank_bin', 'Mã ngân hàng VietQR (tùy chọn, VD: VCB)', 'text', 'placeholder="Điền để QR tự có số tiền + nội dung"')}</div>
+    <div class="mb-3"><label class="lbl">Ảnh QR tĩnh (dùng khi không điền mã ngân hàng)</label>${t && t.qr_image_url ? `<img src="${esc(t.qr_image_url)}" class="w-24 bg-white p-1 mb-2" alt="">` : ''}<input type="file" id="tf-qr" accept="image/*" class="inp"></div>
+    <div class="mb-3"><label class="lbl">Ảnh banner (để trống = ảnh mặc định)</label><input type="file" id="tf-banner" accept="image/*" class="inp"></div>
+    <h4 class="font-bold mt-2 mb-2" style="color:var(--sand)">Nội dung hiển thị</h4>
+    ${ta('rules', 'Điều lệ giải đấu', 6)}${ta('format_text', 'Thể thức thi đấu')}${ta('prize_structure', 'Cơ cấu giải thưởng')}${ta('schedule', 'Lịch thi đấu dự kiến')}${ta('member_rules', 'Quy định về thành viên')}${ta('refund_policy', 'Chính sách hủy và hoàn phí')}
+    <div class="mb-3"><label class="lbl">Câu hỏi thường gặp (mỗi cặp cách nhau 1 dòng trống: dòng đầu là câu hỏi, các dòng sau là trả lời)</label><textarea id="tf-faq" rows="6" class="inp">${esc(faqToText(t && t.faq))}</textarea></div>
+    ${ta('contact', 'Thông tin liên hệ ban tổ chức', 3)}
+    <div class="flex gap-2 mt-2"><button class="btn pri flex-1" onclick="act(this, () => saveTour('${id || ''}'))">Lưu</button><button class="btn flex-1" onclick="closeModal()">Hủy</button></div>`, true);
+}
+async function saveTour(id){
+  const g = k => $('#tf-' + k).value.trim(), n = k => { const x = parseInt($('#tf-' + k).value, 10); return Number.isFinite(x) ? x : NaN; };
+  const o = { name:g('name'), subtitle:g('subtitle') || null, status:g('status'), max_teams:n('max_teams'), prize_total:g('prize_total') || null,
+    fee_solo:n('fee_solo'), fee_duo:n('fee_duo'), fee_squad:n('fee_squad'), allow_substitute:$('#tf-allow_substitute').checked,
+    reg_open_at:fromLocalInput($('#tf-reg_open_at').value), reg_close_at:fromLocalInput($('#tf-reg_close_at').value), start_at:fromLocalInput($('#tf-start_at').value),
+    bank_name:g('bank_name') || null, bank_account:g('bank_account') || null, account_holder:g('account_holder') || null, bank_bin:g('bank_bin') || null,
+    rules:g('rules') || null, format_text:g('format_text') || null, prize_structure:g('prize_structure') || null, schedule:g('schedule') || null,
+    member_rules:g('member_rules') || null, refund_policy:g('refund_policy') || null, faq:textToFaq($('#tf-faq').value), contact:g('contact') || null };
+  if (o.name.length < 3) throw new Error('Tên giải cần từ 3 ký tự.');
+  if (!(o.max_teams >= 1)) throw new Error('Số đội tối đa phải từ 1 trở lên.');
+  if (![o.fee_solo, o.fee_duo, o.fee_squad].every(x => x >= 0)) throw new Error('Lệ phí phải là số không âm.');
+  if (o.reg_open_at && o.reg_close_at && Date.parse(o.reg_open_at) >= Date.parse(o.reg_close_at)) throw new Error('Thời gian đóng đăng ký phải sau thời gian mở.');
+  if (id) o.id = id; else { o.slug = g('slug'); if (!/^[a-z0-9-]{3,40}$/.test(o.slug)) throw new Error('Slug chỉ gồm a-z, 0-9, dấu gạch ngang (3–40 ký tự).'); }
+  const qr = $('#tf-qr').files[0], bn = $('#tf-banner').files[0];
+  if (qr){ if (!DEMO) checkImage(qr); o.qr_image_url = await tapi.uploadAsset(qr); }
+  if (bn){ if (!DEMO) checkImage(bn); o.banner_url = await tapi.uploadAsset(bn); }
+  await tapi.saveTournament(o); closeModal(); toast('Đã lưu thông tin giải'); await tourLoad(); if (TS.sub === 'staff') await staffLoad(); render();
+}
+
+function authButtons(){
+  if (!S.user) return `<button class="btn sm pri" onclick="renderLogin()">Đăng nhập / Đăng ký</button>`;
+  return (S.me ? '' : `<button class="btn sm" onclick="renderClaim()">Liên kết thành viên clan</button>`) + `<button class="btn sm" onclick="logout()">Đăng xuất</button>`;
+}
+
 boot().catch(e => { console.error(e); $('#app').innerHTML = `<div class="p-8" style="color:var(--bad)">Lỗi khởi động: ${esc(e.message)}</div>`; });
 </script>
+</body>
+</html>
